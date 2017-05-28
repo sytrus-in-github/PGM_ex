@@ -6,11 +6,15 @@ function [ pis, mus, sigmas ] = m_step( X, gamma )
 %   mus (K,D) center of gaussians
 %   sigmas (K,D,D) covariance matrices
 %   gamma (K,N)
-    n = size(X,1);
-    k = size(pis,1);
-    Nk = sum(gamma, 2);
+    d = 3;
+    [k, n] = size(gamma);
+    Nk = sum(gamma, 2); % size K
     pis = Nk / n;
     mus = gamma * X ./ Nk;
-    sigmas = ;
+    sigmas = zeros(k, d, d);
+    for i=1:k
+        X_mean = (X - mus(i,:));
+        sigmas(i,:,:) = (X_mean .* gamma(i,:))' * X_mean ./ Nk(i);
+    end
 end
 

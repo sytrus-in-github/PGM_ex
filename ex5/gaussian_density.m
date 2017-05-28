@@ -17,5 +17,7 @@ function [ density_tensor ] = gaussian_density( mu, sigma, shape )
          density_tensor(i, j, k) = density;
       end
     end
-  end   
+  end
+  
+  density_tensor = density_tensor / sum(density_tensor(:));
 end

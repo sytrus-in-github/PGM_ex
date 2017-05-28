@@ -7,16 +7,20 @@ img = imread('banana3.png');
 [foreground, coordinates] = imcrop(img);
 coordinates = round(coordinates);
 
-foreground_vectors_by_color = double(reshape(foreground, [], 3));
+foreground_histogram = create_histogram(double(reshape(foreground, [], 3)));
 
-histogram_matrix = zeros(256, 256, 256);
+upper_background = img(1:coordinates(2) - 1, :, :);
+lower_background = img((coordinates(2) + coordinates(4) + 1):end, :, :);
 
-for i = 1:size(foreground_vectors_by_color, 1)
-   p = foreground_vectors_by_color(i, :) + 1;
-   histogram_matrix(p(1), p(2), p(3)) = histogram_matrix(p(1), p(2), p(3)) + 1;
-end
+left_background = img(coordinates(2):(coordinates(2) + coordinates(4)), 1:(coordinates(1) - 1), :);
+right_background = img(coordinates(2):(coordinates(2) + coordinates(4)), (coordinates(1) + coordinates(3)+ 1):end, :);
 
-normalized_histogram_matrix = histogram_matrix / sum(histogram_matrix(:));
+background_color_vectors = [reshape(upper_background, [], 3);
+                            reshape(lower_background, [], 3);
+                            reshape(left_background, [], 3);
+                            reshape(right_background, [], 3)];
+                            
+background_histogram = create_histogram(double(background_color_vectors));
 
 number_of_gaussians = 5;
 

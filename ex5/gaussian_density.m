@@ -8,6 +8,7 @@ function [ density_tensor ] = gaussian_density( mu, sigma, shape )
   normalizer = 1 / sqrt(det(2*pi*sigma));
   
   density_tensor = zeros(shape);
+   
   
   for i = 1:shape(1)
     for j = 1:shape(2)

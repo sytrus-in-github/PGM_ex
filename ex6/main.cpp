@@ -2,7 +2,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <iostream>
 #include <fstream>
-#include "maxflow-v3.04.src/graph.h"
+#include "maxflow/graph.h"
 
 using namespace std;
 using namespace cv;

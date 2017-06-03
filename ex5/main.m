@@ -30,6 +30,9 @@ background_vectors = double([reshape(upper_background, [], 3);
 pdf_f = zeros(size(img_vectors, 1), 1);
 pdf_b = zeros(size(img_vectors, 1), 1);
 
+
+
+
 for i = 1:K
    mixture_coefficient_f = pis_f(i);
    mu_f = mus_f(:, i);
@@ -47,17 +50,14 @@ for i = 1:K
    pdf_b = pdf_b + temp_pdf_b;
 end
 
- labels = pdf_f > pdf_b;
+pdf_f = reshape(pdf_f, size(img, 1), size(img, 2));
+pdf_b = reshape(pdf_b, size(img, 1), size(img, 2));
+
+csvwrite('pdf_f.csv', pdf_f)
+csvwrite('pdf_b.csv', pdf_b)
+
+labels = pdf_f > pdf_b;
   
- segmentation = reshape(labels, size(img, 1), size(img, 2));
+figure
+imshow(uint8(labels) * 255)
  
- figure
- imshow(uint8(segmentation) * 255)
- 
-%                             
-% background_histogram = create_histogram(double(background_color_vectors));
-% 
-% number_of_gaussians = 5;
-% 
-% pi_components = rand(number_of_gaussians, 1);
-% pi_components = pi_components / sum(pi_components);

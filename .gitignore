@@ -1,3 +1,5 @@
 */build/*
 *.asv
 *.m~
+.idea/
+cmake-build-debug/

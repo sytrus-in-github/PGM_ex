@@ -21,7 +21,7 @@ function [ pis, mus, sigmas ] = m_step( X, gamma )
         end
         
         sigmas(:,:,i) = (X_mean .* gamma(i,:)')' * X_mean ./ Nk(i);
-        sigmas(:,:,i) = (sigmas(:,:,i) + sigmas(:,:,i)') / 2 + eye(d) * 1e-5;
+        sigmas(:,:,i) = (sigmas(:,:,i) + sigmas(:,:,i)') / 2 + eye(d) * 1e-8;
     end
 end
 

@@ -8,7 +8,7 @@ INCLUDE_DIRECTORIES(${OpenCV_INCLUDE_DIRS})
 
 PROJECT(ex6)
 
-ADD_EXECUTABLE(main main.cpp maxflow/graph.cpp maxflow/maxflow.cpp)
+ADD_EXECUTABLE(main main.cpp ../maxflow/graph.cpp ../maxflow/maxflow.cpp)
 
 TARGET_LINK_LIBRARIES(main ${OpenCV_LIBS})
 

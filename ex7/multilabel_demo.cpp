@@ -12,7 +12,13 @@
 #include <vector>
 #include <math.h>
 #include <cmath>
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN 1
+#include <winsock2.h>
+#include <windows.h>
+#else
 #include <netinet/in.h>
+#endif
 #include <stdint.h>
 
 
@@ -65,6 +71,7 @@ ProbImage& ProbImage::operator=(const ProbImage& o) {
         if( data_ ) delete[] data_;
         data_ = new float[ width_*height_*depth_ ];
         memcpy( data_, o.data_, width_*height_*depth_*sizeof(float) );
+		return *this;
 }
 ProbImage::~ProbImage(){
         if( data_ ) delete[] data_;

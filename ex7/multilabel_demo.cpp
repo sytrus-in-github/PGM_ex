@@ -172,7 +172,7 @@ main (int argc, char** argv)
     printf ("load unary potentials\n");
 
     // the filenames of image and its unary should match!
-    std::string rgbfile = "1_27_s.bmp", unaryfile = "1_27_s.c_unary";
+    std::string rgbfile = "../1_27_s.bmp", unaryfile = "../1_27_s.c_unary";
 
     // load the probability distribution data
     ProbImage prob;

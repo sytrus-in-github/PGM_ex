@@ -25,6 +25,8 @@
 #endif
 
 #include <stdint.h>
+#include <utility>
+#include <vector>
 #include "../maxflow/graph.h"
 
 
@@ -36,6 +38,29 @@ using namespace std;
 using namespace cv;
 
 typedef Graph<double, double, double> Graph3D;
+
+std::pair<std::vector<float>, std::vector<float>> get_bcost_h_v(cv::Mat rgb, const float lamb){
+    cv::Size sz = rgb.size();
+    int nb_rows = rgb.rows, nb_cols = rgb.cols;
+
+    std::vector<float> hbcost(nb_rows * (nb_cols - 1)), vbcost((nb_rows - 1) * nb_cols);
+    for (int i = 0; i < nb_rows; ++i) {
+        for (int j = 0; j < nb_cols; ++j) {
+            if (j != nb_cols - 1) {
+                cv::Vec3f diff = (cv::Vec3f) rgb.at<cv::Vec3b>(i, j) - (cv::Vec3f) rgb.at<cv::Vec3b>(i, j + 1);
+                hbcost[i * nb_cols + j] = exp(-lamb * (diff[0] * diff[0] + diff[1] * diff[1] + diff[2] * diff[2]));
+            }
+            if (i != nb_rows - 1) {
+                cv::Vec3f diff = (cv::Vec3f) rgb.at<cv::Vec3b>(i, j) - (cv::Vec3f) rgb.at<cv::Vec3b>(i + 1, j);
+                vbcost[i * nb_cols + j] = exp(-lamb * (diff[0] * diff[0] + diff[1] * diff[1] + diff[2] * diff[2]));
+            }
+        }
+    }
+    return std::make_pair(hbcost, vbcost);
+}
+
+const float LAMBDA = 0.5;
+
 
 class ProbImage {
 public:

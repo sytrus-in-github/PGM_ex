@@ -50,7 +50,7 @@ std::pair<std::vector<float>, std::vector<float> > get_bcost_h_v(cv::Mat rgb, co
         for (int j = 0; j < nb_cols; ++j) {
             if (j != nb_cols - 1) {
                 cv::Vec3f diff = (cv::Vec3f) rgb.at<cv::Vec3b>(i, j) - (cv::Vec3f) rgb.at<cv::Vec3b>(i, j + 1);
-                hbcost[i * nb_cols + j] = exp(-lamb * (diff[0] * diff[0] + diff[1] * diff[1] + diff[2] * diff[2]));
+                hbcost[i * (nb_cols - 1) + j] = exp(-lamb * (diff[0] * diff[0] + diff[1] * diff[1] + diff[2] * diff[2]));
             }
             if (i != nb_rows - 1) {
                 cv::Vec3f diff = (cv::Vec3f) rgb.at<cv::Vec3b>(i, j) - (cv::Vec3f) rgb.at<cv::Vec3b>(i + 1, j);
@@ -329,7 +329,7 @@ void calculate_energies(const ProbImage &prob, Mat &unary, Mat &rgb) {
                     if (i != unary.cols - 1) {
                         if (unary.at<uchar>(j, i+1) != k) {
                             binary_energies.insert(make_pair(make_pair(make_pair(j, i), false), 
-															 make_pair(binary_weights.first[j * unary.cols + i],
+															 make_pair(binary_weights.first[j * (unary.cols - 1) + i],
 																	   make_pair(j, i + 1))));
                         }
                     }

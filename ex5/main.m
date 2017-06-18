@@ -53,11 +53,16 @@ end
 pdf_f = reshape(pdf_f, size(img, 1), size(img, 2));
 pdf_b = reshape(pdf_b, size(img, 1), size(img, 2));
 
-csvwrite('pdf_f.csv', pdf_f)
-csvwrite('pdf_b.csv', pdf_b)
+% csvwrite('pdf_f.csv', pdf_f)
+% csvwrite('pdf_b.csv', pdf_b)
 
 labels = pdf_f > pdf_b;
   
+binary_img = uint8(labels) * 255;
 figure
-imshow(uint8(labels) * 255)
+imshow(binary_img)
+
+% imwrite(binary_img, 'segmented_banana.png');
+
+
  

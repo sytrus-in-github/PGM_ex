@@ -107,6 +107,8 @@ protected:
 };
 
 
+void calculate_energies(const ProbImage &prob, Mat &unary);
+
 ProbImage::ProbImage() : data_(NULL), width_(0), height_(0), depth_(0) {
 }
 
@@ -250,6 +252,58 @@ Graph3D *constructGraph(Mat &fg_ucost, Mat &bg_ucost, const double bcost_coeff) 
     return graph;
 }
 
+void calculate_energies(const ProbImage &prob, Mat &unary, Mat &rgb) {
+    pair<vector<float>, vector<float>> binary_weights = get_bcost_h_v(rgb, LAMBDA);
+
+    for (uchar k = 0; k < prob.depth(); ++k) {
+
+        vector<pair<int, int>> non_alpha_node_indices;
+        map<pair<int, int>, pair<float, float>> unary_energies;
+
+        for (int i = 0; i < unary.cols; ++i) {
+            for (int j = 0; j < unary.rows; ++j) {
+                if (unary.at<uchar>(j, i) != k) {
+                    pair<int, int> index_pair = make_pair(j, i);
+                    non_alpha_node_indices.push_back(index_pair);
+
+                    if (unary_energies.find(index_pair) != unary_energies.end()) {
+                        pair<float, float> energies = make_pair(prob(i, j, k), prob(i, j, unary.at<uchar>(j, i)));
+                        unary_energies.insert(make_pair(index_pair, energies));
+                    }
+                }
+                else {
+                    if (j != unary.rows - 1) {
+                        uchar label = unary.at<uchar>(j+1, i);
+                        if (label != k) {
+                            pair<int, int> index_pair = make_pair(j+1, i);
+
+                            if (unary_energies.find(index_pair) != unary_energies.end()) {
+
+//                                binary_weights.second(j * unary.cols + i)
+
+                                pair<float, float> energies = make_pair(prob(i, j, k), prob(i, j, unary.at<uchar>(j, i)));
+                                unary_energies.insert(make_pair(index_pair, energies));
+
+                            } else {
+                                pair<float, float> current_energy = unary_energies[index_pair];
+
+
+                            }
+
+
+                        }
+                    }
+
+
+                }
+            }
+        }
+
+        int a = 1;
+    }
+}
+
+
 
 int main(int argc, char **argv) {
     printf("load unary potentials\n");
@@ -284,47 +338,7 @@ int main(int argc, char **argv) {
     }
 
 
-    for (uchar k = 0; k < prob.depth(); ++k) {
-
-        vector<pair<int, int>> non_alpha_node_indices;
-        map<pair<int, int>, pair<float, float>> unary_energies;
-
-        for (int i = 0; i < unary.cols; ++i) {
-            for (int j = 0; j < unary.rows; ++j) {
-                if (unary.at<uchar>(j, i) != k) {
-                    pair<int, int> index_pair = make_pair(j, i);
-                    non_alpha_node_indices.push_back(index_pair);
-
-                    if (unary_energies.find(index_pair) != unary_energies.end()) {
-                        pair<float, float> energies = make_pair(prob(i, j, k), prob(i, j, unary.at<uchar>(j, i)));
-                        unary_energies.insert(make_pair(index_pair, energies));
-                    }
-                }
-                else {
-                    if (j != unary.rows - 1) {
-                        uchar label = unary.at<uchar>(j+1, i);
-                        if (label != k) {
-                            pair<int, int> index_pair = make_pair(j+1, i);
-
-                            if (unary_energies.find(index_pair) != unary_energies.end()) {
-                                pair<float, float> energies = make_pair(prob(i, j, k), prob(i, j, unary.at<uchar>(j, i)));
-                                unary_energies.insert(make_pair(index_pair, energies));
-                            } else {
-                                pair<float, float> current_energy = unary_energies[index_pair];
-
-                            }
-
-
-                        }
-                    }
-
-
-                }
-            }
-        }
-
-        int a = 1;
-    }
+    calculate_energies(prob, unary);
 
 
 

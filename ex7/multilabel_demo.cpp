@@ -301,7 +301,7 @@ void calculate_energies(const ProbImage &prob, Mat &unary, Mat &rgb) {
 
 		vector<Coord2> non_alpha_node_indices;
 		map<Coord2, pair<float, float> > unary_energies;
-		map<BinaryKey, pair<float, Coord2>> binary_energies;
+		map<BinaryKey, pair<float, Coord2> > binary_energies;
 
         for (int i = 0; i < unary.cols; ++i) {
             for (int j = 0; j < unary.rows; ++j) {
@@ -391,10 +391,6 @@ int main(int argc, char **argv) {
 		unary.copyTo(old_unary);
 		calculate_energies(prob, unary, rgb);
 	} while (not_same(unary, old_unary));
-    
-
-
-
 
 	// visualization
     cv::imshow("rgb", rgb);

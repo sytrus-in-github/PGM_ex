@@ -303,7 +303,9 @@ void calculate_energies(const ProbImage &prob, Mat &unary, Mat &rgb) {
     }
 }
 
-
+bool not_same(Mat a, Mat b){
+	return countNonZero(a != b) == 0;
+}
 
 int main(int argc, char **argv) {
     printf("load unary potentials\n");
@@ -317,10 +319,10 @@ int main(int argc, char **argv) {
     printf("decompressed the probability distribution, %d, %d, %d\n", prob.width(), prob.height(), prob.depth());
 
     // demo, generate a segmentation where the label corresponds to the highest class probability
-    // todo, contrust the CRF and solve the segmentation with your implementation of alpha-expansion
+	// contrust the CRF and solve the segmentation with your implementation of alpha-expansion
     cv::Mat rgb = cv::imread(rgbfile, CV_LOAD_IMAGE_COLOR);
     cv::Mat unary(rgb.size(), CV_8U, cv::Scalar(0));
-
+	
     for (int i = 0; i < unary.cols; ++i) {
         for (int j = 0; j < unary.rows; ++j) {
             float maxprob = 0.f;
@@ -336,16 +338,21 @@ int main(int argc, char **argv) {
             unary.at<uchar>(j, i) = static_cast<uchar>(lid);
         }
     }
+	cv::Mat old_unary;
+	int counter = 0;
+	do{
+		cout << "iteration " << counter++ << endl;
+		unary.copyTo(old_unary);
+		calculate_energies(prob, unary, rgb);
+	} while (not_same(unary, old_unary));
+    
 
 
-    calculate_energies(prob, unary);
 
 
-
-
-
+//	// visualization
 //    cv::imshow("rgb", rgb);
-//    cv::imshow("unary", unary);
+//    cv::imshow("unary", 10*unary);
     cv::waitKey();
     return 0;
 }

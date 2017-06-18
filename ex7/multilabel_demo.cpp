@@ -33,7 +33,7 @@ const float LAMBDA = 0.5;
 
 std::pair<std::vector<float>, std::vector<float>> get_bcost_h_v(cv::Mat rgb, const float lamb){
 	cv::Size sz = rgb.size();
-	int nb_rows = rgb.rows, nb_cols = rgb.cols, nb_chans = rgb.channels();
+	int nb_rows = rgb.rows, nb_cols = rgb.cols;
 	
 	std::vector<float> hbcost(nb_rows * (nb_cols - 1)), vbcost((nb_rows - 1) * nb_cols);
 	for (int i = 0; i < nb_rows; ++i) {

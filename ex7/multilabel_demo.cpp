@@ -40,7 +40,7 @@ using namespace cv;
 typedef Graph<double, double, double> Graph3D;
 typedef pair<pair<int, int>, bool> BinaryKey;
 
-std::pair<std::vector<float>, std::vector<float>> get_bcost_h_v(cv::Mat rgb, const float lamb) {
+std::pair<std::vector<float>, std::vector<float> > get_bcost_h_v(cv::Mat rgb, const float lamb) {
     cv::Size sz = rgb.size();
     int nb_rows = rgb.rows, nb_cols = rgb.cols;
 
@@ -107,12 +107,6 @@ protected:
     int width_, height_, depth_;
 };
 
-
-void calculate_energies(const ProbImage &prob, Mat &unary);
-
-map<float, float> &
-getMap(Mat &add_unaries, const pair<vector<float, allocator<float>>, vector<float, allocator<float>>> &binary_weights,
-       uchar k, map<pair<int, int>, pair<float, float>> &unary_energies, int i_idx, int j_idx, int weight_idx);
 
 ProbImage::ProbImage() : data_(NULL), width_(0), height_(0), depth_(0) {
 }
@@ -258,7 +252,7 @@ Graph3D *constructGraph(Mat &fg_ucost, Mat &bg_ucost, const double bcost_coeff) 
 }
 
 void set_unaries(Mat &unary, vector<float> &binary_weights,
-                 uchar k, map<pair<int, int>, pair<float, float>> &unary_energies, int i_idx, int j_idx,
+                 uchar k, map<pair<int, int>, pair<float, float> > &unary_energies, int i_idx, int j_idx,
                  int weight_idx) {
 
     uchar label = unary.at<uchar>(j_idx, i_idx);
@@ -280,12 +274,12 @@ void set_unaries(Mat &unary, vector<float> &binary_weights,
 
 
 void calculate_energies(const ProbImage &prob, Mat &unary, Mat &rgb) {
-    pair<vector<float>, vector<float>> binary_weights = get_bcost_h_v(rgb, LAMBDA);
+    pair<vector<float>, vector<float> > binary_weights = get_bcost_h_v(rgb, LAMBDA);
 
     for (uchar k = 0; k < prob.depth(); ++k) {
 
-        vector<pair<int, int>> non_alpha_node_indices;
-        map<pair<int, int>, pair<float, float>> unary_energies;
+        vector<pair<int, int> > non_alpha_node_indices;
+        map<pair<int, int>, pair<float, float> > unary_energies;
         map<BinaryKey, float> binary_energies;
 
         for (int i = 0; i < unary.cols; ++i) {
@@ -306,12 +300,12 @@ void calculate_energies(const ProbImage &prob, Mat &unary, Mat &rgb) {
 
                     if (j != unary.rows - 1) {
                         if (unary.at<uchar>(j+1, i) != k) {
-                            binary_energies.insert(make_pair(make_pair(j, i), true));
+                            binary_energies.insert(make_pair(make_pair(make_pair(j, i), true), binary_weights.second[j * unary.cols + i]));
                         }
                     }
                     if (i != unary.cols - 1) {
                         if (unary.at<uchar>(j, i+1) != k) {
-                            binary_energies.insert(make_pair(make_pair(j, i), false));
+                            binary_energies.insert(make_pair(make_pair(make_pair(j, i), false), binary_weights.first[j * unary.cols + i]));
                         }
                     }
 
@@ -320,15 +314,19 @@ void calculate_energies(const ProbImage &prob, Mat &unary, Mat &rgb) {
                         set_unaries(unary, binary_weights.second, k, unary_energies, i, j + 1, j * unary.cols + i);
                     }
                     if (i != unary.cols - 1) {
-                        set_unaries(unary, binary_weights.second, k, unary_energies, i + 1, j, j * unary.cols + i);
+                        set_unaries(unary, binary_weights.first, k, unary_energies, i + 1, j, j * unary.cols + i);
                     }
                 }
             }
         }
 
+      //todo: create the graph
     }
 }
 
+bool not_same(Mat a, Mat b){
+	return countNonZero(a != b) == 0;
+}
 
 int main(int argc, char **argv) {
     printf("load unary potentials\n");
@@ -342,10 +340,10 @@ int main(int argc, char **argv) {
     printf("decompressed the probability distribution, %d, %d, %d\n", prob.width(), prob.height(), prob.depth());
 
     // demo, generate a segmentation where the label corresponds to the highest class probability
-    // todo, contrust the CRF and solve the segmentation with your implementation of alpha-expansion
+	// contrust the CRF and solve the segmentation with your implementation of alpha-expansion
     cv::Mat rgb = cv::imread(rgbfile, CV_LOAD_IMAGE_COLOR);
     cv::Mat unary(rgb.size(), CV_8U, cv::Scalar(0));
-
+	
     for (int i = 0; i < unary.cols; ++i) {
         for (int j = 0; j < unary.rows; ++j) {
             float maxprob = 0.f;
@@ -361,16 +359,21 @@ int main(int argc, char **argv) {
             unary.at<uchar>(j, i) = static_cast<uchar>(lid);
         }
     }
+	cv::Mat old_unary;
+	int counter = 1;
+	do{
+		cout << "iteration " << counter++ << endl;
+		unary.copyTo(old_unary);
+		calculate_energies(prob, unary, rgb);
+	} while (not_same(unary, old_unary));
+    
 
 
-    calculate_energies(prob, unary);
 
 
-
-
-
+//	// visualization
 //    cv::imshow("rgb", rgb);
-//    cv::imshow("unary", unary);
+//    cv::imshow("unary", 10*unary);
     cv::waitKey();
     return 0;
 }

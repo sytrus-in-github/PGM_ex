@@ -38,8 +38,9 @@ using namespace std;
 using namespace cv;
 
 typedef Graph<double, double, double> Graph3D;
+typedef pair<pair<int, int>, bool> BinaryKey;
 
-std::pair<std::vector<float>, std::vector<float>> get_bcost_h_v(cv::Mat rgb, const float lamb){
+std::pair<std::vector<float>, std::vector<float>> get_bcost_h_v(cv::Mat rgb, const float lamb) {
     cv::Size sz = rgb.size();
     int nb_rows = rgb.rows, nb_cols = rgb.cols;
 
@@ -108,6 +109,10 @@ protected:
 
 
 void calculate_energies(const ProbImage &prob, Mat &unary);
+
+map<float, float> &
+getMap(Mat &add_unaries, const pair<vector<float, allocator<float>>, vector<float, allocator<float>>> &binary_weights,
+       uchar k, map<pair<int, int>, pair<float, float>> &unary_energies, int i_idx, int j_idx, int weight_idx);
 
 ProbImage::ProbImage() : data_(NULL), width_(0), height_(0), depth_(0) {
 }
@@ -252,6 +257,28 @@ Graph3D *constructGraph(Mat &fg_ucost, Mat &bg_ucost, const double bcost_coeff) 
     return graph;
 }
 
+void set_unaries(Mat &unary, vector<float> &binary_weights,
+                 uchar k, map<pair<int, int>, pair<float, float>> &unary_energies, int i_idx, int j_idx,
+                 int weight_idx) {
+
+    uchar label = unary.at<uchar>(j_idx, i_idx);
+    if (label != k) {
+        pair<int, int> index_pair = make_pair(j_idx, i_idx);
+        float weight = binary_weights[weight_idx];
+
+        if (unary_energies.find(index_pair) != unary_energies.end()) {
+            pair<float, float> energies = make_pair(0, weight);
+            unary_energies.insert(make_pair(index_pair, energies));
+
+        } else {
+            pair<float, float> current_energy = unary_energies[index_pair];
+            current_energy.second += weight;
+            unary_energies[index_pair] = current_energy;
+        }
+    }
+}
+
+
 void calculate_energies(const ProbImage &prob, Mat &unary, Mat &rgb) {
     pair<vector<float>, vector<float>> binary_weights = get_bcost_h_v(rgb, LAMBDA);
 
@@ -259,6 +286,7 @@ void calculate_energies(const ProbImage &prob, Mat &unary, Mat &rgb) {
 
         vector<pair<int, int>> non_alpha_node_indices;
         map<pair<int, int>, pair<float, float>> unary_energies;
+        map<BinaryKey, float> binary_energies;
 
         for (int i = 0; i < unary.cols; ++i) {
             for (int j = 0; j < unary.rows; ++j) {
@@ -269,40 +297,37 @@ void calculate_energies(const ProbImage &prob, Mat &unary, Mat &rgb) {
                     if (unary_energies.find(index_pair) != unary_energies.end()) {
                         pair<float, float> energies = make_pair(prob(i, j, k), prob(i, j, unary.at<uchar>(j, i)));
                         unary_energies.insert(make_pair(index_pair, energies));
+                    } else {
+                        pair<float, float> current_energy = unary_energies[index_pair];
+                        current_energy.first += prob(i, j, k);
+                        current_energy.second += prob(i, j, unary.at<uchar>(j, i));
+                        unary_energies[index_pair] = current_energy;
                     }
-                }
-                else {
+
                     if (j != unary.rows - 1) {
-                        uchar label = unary.at<uchar>(j+1, i);
-                        if (label != k) {
-                            pair<int, int> index_pair = make_pair(j+1, i);
-
-                            if (unary_energies.find(index_pair) != unary_energies.end()) {
-
-//                                binary_weights.second(j * unary.cols + i)
-
-                                pair<float, float> energies = make_pair(prob(i, j, k), prob(i, j, unary.at<uchar>(j, i)));
-                                unary_energies.insert(make_pair(index_pair, energies));
-
-                            } else {
-                                pair<float, float> current_energy = unary_energies[index_pair];
-
-
-                            }
-
-
+                        if (unary.at<uchar>(j+1, i) != k) {
+                            binary_energies.insert(make_pair(make_pair(j, i), true));
+                        }
+                    }
+                    if (i != unary.cols - 1) {
+                        if (unary.at<uchar>(j, i+1) != k) {
+                            binary_energies.insert(make_pair(make_pair(j, i), false));
                         }
                     }
 
-
+                } else {
+                    if (j != unary.rows - 1) {
+                        set_unaries(unary, binary_weights.second, k, unary_energies, i, j + 1, j * unary.cols + i);
+                    }
+                    if (i != unary.cols - 1) {
+                        set_unaries(unary, binary_weights.second, k, unary_energies, i + 1, j, j * unary.cols + i);
+                    }
                 }
             }
         }
 
-        int a = 1;
     }
 }
-
 
 
 int main(int argc, char **argv) {

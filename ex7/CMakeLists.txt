@@ -10,7 +10,9 @@ FIND_PACKAGE(OpenCV REQUIRED)
 INCLUDE_DIRECTORIES(${OpenCV_INCLUDE_DIRS})
 
 set(SOURCE_FILES
-        multilabel_demo.cpp)
+        multilabel_demo.cpp
+        ../maxflow/graph.cpp
+        ../maxflow/maxflow.cpp)
 
 add_executable(in2329_exercise_07_supp ${SOURCE_FILES})
 

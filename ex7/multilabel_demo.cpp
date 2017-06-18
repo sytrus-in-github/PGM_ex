@@ -20,6 +20,7 @@
 #include <netinet/in.h>
 #endif
 #include <stdint.h>
+#include "../maxflow/graph.h"
 
 
 #include <opencv2/opencv.hpp>

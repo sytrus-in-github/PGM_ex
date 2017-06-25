@@ -1,6 +1,8 @@
 import Queue as Q
 import numpy as np
 import utils
+from matplotlib import pyplot as plt
+
 
 LAMBDA1 = 0.0001
 LAMBDA2 = 0.0001
@@ -26,21 +28,55 @@ def get_mean_for_domain(current_domain, img_mean):
 def compute_unaries(img, fg_mean, bg_mean):
     fg_unaries = NU + LAMBDA1 * np.square(img - fg_mean)
     bg_unaries = LAMBDA2 * np.square(img - bg_mean)
-    return fg_unaries, bg_unaries
+    return np.stack([fg_unaries, bg_unaries], axis=-1)
+
+
+def get_energy(domain, img_mean, img):
+    fg_mean, bg_mean = get_mean_for_domain(domain, img_mean)
+    unaries = compute_unaries(img, fg_mean, bg_mean)
+
+    return utils.gridGraphCut(unaries, MU)
+
+
+def split_domain(domain):
+    xs, xe, ys, ye = domain
+
+    if xe - xs < ye - ys:
+        mid = (ye + ys) // 2
+        return (xs, xe, ys, mid), (xs, xe, mid, ye)
+
+    mid = (xs + xe) // 2
+    return (xs, mid, ys, ye), (mid, xe, ys, ye)
 
 
 if __name__ == '__main__':
-    # print "hello world!"
-
     # first fg, second bg
-    domain = (0, 255, 0, 255)
+    domain = (0, 256, 0, 256)
 
     priority_queue = Q.PriorityQueue()
 
     img = utils.readImageAsGray('branchAndMinCut/garden.png')
     img_mean = np.mean(img)
 
-    fg_mean, bg_mean = get_mean_for_domain(domain, img_mean)
+    energy, _ = get_energy(domain, img_mean, img)
 
-    fg_unaries, bg_unaries = compute_unaries(img, fg_mean, bg_mean)
+    priority_queue.put((energy, domain))
 
+    while True:
+        node = priority_queue.get()
+        domain = node[1]
+        if domain[0] == domain[1] - 1 and domain[2] == domain[3] - 1:
+            print domain
+            _, isSource = get_energy(domain, img_mean, img)
+            break
+
+        domain1, domain2 = split_domain(domain)
+        energy1, _ = get_energy(domain1, img_mean, img)
+        energy2, _ = get_energy(domain2, img_mean, img)
+
+        priority_queue.put((energy1, domain1))
+        priority_queue.put((energy2, domain2))
+
+    # result_img = (255 * isSource).astype(np.uint8)
+    # plt.imshow(result_img, cmap='gray')
+    # plt.show()

@@ -67,7 +67,6 @@ if __name__ == '__main__':
         node = priority_queue.get()
         domain = node[1]
         if domain[0] == domain[1] - 1 and domain[2] == domain[3] - 1:
-
             _, isSource = get_energy(domain, img_mean, img)
             break
 
@@ -78,12 +77,6 @@ if __name__ == '__main__':
         priority_queue.put((energy1, domain1))
         priority_queue.put((energy2, domain2))
 
-    # result_img = (255 * isSource).astype(np.uint8)
-
-    fg_color = np.mean(isSource * img)
-    bg_color = np.mean((1 - isSource) * img)
-
-    result_img = (fg_color * isSource + bg_color * (1 - isSource)).astype(np.uint8)
-
+    result_img = (domain[0] * isSource + domain[2] * (1 - isSource)).astype(np.uint8)
     plt.imshow(result_img, cmap='gray', vmin=0, vmax=255)
     plt.show()

@@ -23,7 +23,7 @@ def gridGraphCut(unary, binary):
     cutValue = g.maxflow()
     isSource = g.get_grid_segments(nodeids)
 
-    return -cutValue, isSource
+    return cutValue, isSource
 
 if __name__=="__main__":
     img = readImageAsGray('branchAndMinCut/garden.png')

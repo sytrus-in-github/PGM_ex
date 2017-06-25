@@ -3,3 +3,4 @@
 *.m~
 .idea/
 cmake-build-debug/
+*.pyc

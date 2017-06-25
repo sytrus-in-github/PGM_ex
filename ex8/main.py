@@ -56,6 +56,7 @@ if __name__ == '__main__':
     priority_queue = Q.PriorityQueue()
 
     img = utils.readImageAsGray('branchAndMinCut/garden.png')
+    img = img.astype(np.float32)
     img_mean = np.mean(img)
 
     energy, _ = get_energy(domain, img_mean, img)
@@ -77,6 +78,6 @@ if __name__ == '__main__':
         priority_queue.put((energy1, domain1))
         priority_queue.put((energy2, domain2))
 
-    # result_img = (255 * isSource).astype(np.uint8)
-    # plt.imshow(result_img, cmap='gray')
-    # plt.show()
+    result_img = (255 * isSource).astype(np.uint8)
+    plt.imshow(result_img, cmap='gray')
+    plt.show()

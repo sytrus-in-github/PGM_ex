@@ -50,11 +50,11 @@ std::pair<std::vector<float>, std::vector<float> > get_bcost_h_v(cv::Mat rgb, co
         for (int j = 0; j < nb_cols; ++j) {
             if (j != nb_cols - 1) {
                 cv::Vec3f diff = (cv::Vec3f) rgb.at<cv::Vec3b>(i, j) - (cv::Vec3f) rgb.at<cv::Vec3b>(i, j + 1);
-                hbcost[i * (nb_cols - 1) + j] = exp(-lamb * (diff[0] * diff[0] + diff[1] * diff[1] + diff[2] * diff[2]));
+                hbcost[i * (nb_cols - 1) + j] = exp(-lamb * (diff[0] * diff[0] + diff[1] * diff[1] + diff[2] * diff[2]) / (255 * 255));
             }
             if (i != nb_rows - 1) {
                 cv::Vec3f diff = (cv::Vec3f) rgb.at<cv::Vec3b>(i, j) - (cv::Vec3f) rgb.at<cv::Vec3b>(i + 1, j);
-                vbcost[i * nb_cols + j] = exp(-lamb * (diff[0] * diff[0] + diff[1] * diff[1] + diff[2] * diff[2]));
+                vbcost[i * nb_cols + j] = exp(-lamb * (diff[0] * diff[0] + diff[1] * diff[1] + diff[2] * diff[2]) / (255 * 255));
             }
         }
     }
@@ -235,7 +235,7 @@ Graph3D* constructGraph(vector<Coord2>& non_alpha_node_indices,
 						map<BinaryKey, pair<float, Coord2> >& binary_energies) {
 	map<Coord2, int> coord2index;
 	int i = 0;
-	for (vector<Coord2>::iterator it = non_alpha_node_indices.begin(); it < non_alpha_node_indices.end(); it++, i++){
+	for (auto it = non_alpha_node_indices.begin(); it < non_alpha_node_indices.end(); it++, i++){
 		coord2index.insert(make_pair(*it, i));
 	}
 	Graph3D *graph = new Graph3D(non_alpha_node_indices.size(), binary_energies.size());
@@ -243,10 +243,10 @@ Graph3D* constructGraph(vector<Coord2>& non_alpha_node_indices,
 	graph->add_node(non_alpha_node_indices.size());
     // add unary / binary costs
 	i = 0;
-	for (vector<pair<int, int> >::iterator it = non_alpha_node_indices.begin(); it < non_alpha_node_indices.end(); it++, i++){
+	for (auto it = non_alpha_node_indices.begin(); it < non_alpha_node_indices.end(); it++, i++){
 		pair<float, float> t_weights = unary_energies[*it];
 		// add unary weights
-		graph->add_tweights(i, t_weights.first, t_weights.second);
+		graph->add_tweights(i, t_weights.second, t_weights.first);
 		// add binary weights if exists
 		if (binary_energies.find(make_pair(*it, false)) != binary_energies.end()){
 			pair<float, Coord2> bval = binary_energies[make_pair(*it, false)];
@@ -264,7 +264,7 @@ Graph3D* constructGraph(vector<Coord2>& non_alpha_node_indices,
 void get_label_from_graph(Mat& label, Graph3D *graph, vector<Coord2>& non_alpha_node_indices, uchar alpha){
 	graph->maxflow();
 	int i = 0;
-	for (vector<pair<int, int> >::iterator it = non_alpha_node_indices.begin(); it < non_alpha_node_indices.end(); it++, i++){
+	for (auto it = non_alpha_node_indices.begin(); it < non_alpha_node_indices.end(); it++, i++){
 			if (graph->what_segment(i) == Graph<double, double, double>::SOURCE){
 				label.at<uchar>(it->first, it->second) = alpha;
 //                cout << it->first << " " << it->second << endl;
@@ -296,7 +296,7 @@ void set_unaries(Mat &unary, vector<float> &binary_weights,
 
 
 void calculate_energies(const ProbImage &prob, Mat &unary, Mat &rgb) {
-    pair<vector<float>, vector<float> > binary_weights = get_bcost_h_v(rgb, LAMBDA);
+    auto binary_weights = get_bcost_h_v(rgb, LAMBDA);
 
     for (uchar k = 0; k < prob.depth(); ++k) {
 
@@ -307,31 +307,42 @@ void calculate_energies(const ProbImage &prob, Mat &unary, Mat &rgb) {
         for (int i = 0; i < unary.cols; ++i) {
             for (int j = 0; j < unary.rows; ++j) {
                 if (unary.at<uchar>(j, i) != k) {
-                    pair<int, int> index_pair = make_pair(j, i);
+                    auto index_pair = make_pair(j, i);
                     non_alpha_node_indices.push_back(index_pair);
 
                     if (unary_energies.find(index_pair) != unary_energies.end()) {
-                        pair<float, float> energies = make_pair(prob(i, j, k), prob(i, j, unary.at<uchar>(j, i)));
+                        pair<float, float> energies = make_pair(-log(prob(i, j, k)), -log(prob(i, j, unary.at<uchar>(j, i))));
                         unary_energies.insert(make_pair(index_pair, energies));
                     } else {
                         pair<float, float> current_energy = unary_energies[index_pair];
-                        current_energy.first += prob(i, j, k);
-                        current_energy.second += prob(i, j, unary.at<uchar>(j, i));
+                        current_energy.first += -log(prob(i, j, k));
+                        current_energy.second += -log(prob(i, j, unary.at<uchar>(j, i)));
                         unary_energies[index_pair] = current_energy;
                     }
 
                     if (j != unary.rows - 1) {
                         if (unary.at<uchar>(j+1, i) != k) {
-                            binary_energies.insert(make_pair(make_pair(make_pair(j, i), true), 
-														     make_pair(binary_weights.second[j * unary.cols + i],
-																	   make_pair(j + 1, i))));
+                            if (unary.at<uchar>(j+1, i) != unary.at<uchar>(j, i)) {
+                                binary_energies.insert(make_pair(make_pair(make_pair(j, i), true),
+                                                                 make_pair(binary_weights.second[j * unary.cols + i],
+                                                                           make_pair(j + 1, i))));
+                            } else {
+                                binary_energies.insert(make_pair(make_pair(make_pair(j, i), true),
+                                                                 make_pair(0, make_pair(j + 1, i))));
+                            }
                         }
                     }
                     if (i != unary.cols - 1) {
                         if (unary.at<uchar>(j, i+1) != k) {
-                            binary_energies.insert(make_pair(make_pair(make_pair(j, i), false), 
-															 make_pair(binary_weights.first[j * (unary.cols - 1) + i],
-																	   make_pair(j, i + 1))));
+                            if (unary.at<uchar>(j, i+1) != unary.at<uchar>(j, i)) {
+                                binary_energies.insert(make_pair(make_pair(make_pair(j, i), false),
+                                                                 make_pair(binary_weights.first[j * (unary.cols - 1) + i],
+                                                                           make_pair(j, i + 1))));
+                            } else {
+                                binary_energies.insert(make_pair(make_pair(make_pair(j, i), false),
+                                                                 make_pair(0, make_pair(j, i + 1))));
+                            }
+
                         }
                     }
 
@@ -359,7 +370,7 @@ int main(int argc, char **argv) {
     printf("load unary potentials\n");
 
     // the filenames of image and its unary should match!
-    std::string rgbfile = "../1_27_s.bmp", unaryfile = "../1_27_s.c_unary";
+    std::string rgbfile = "../1_9_s.bmp", unaryfile = "../1_9_s.c_unary";
 
     // load the probability distribution data
     ProbImage prob;
@@ -370,7 +381,9 @@ int main(int argc, char **argv) {
 	// contrust the CRF and solve the segmentation with your implementation of alpha-expansion
     cv::Mat rgb = cv::imread(rgbfile, CV_LOAD_IMAGE_COLOR);
     cv::Mat unary(rgb.size(), CV_8U, cv::Scalar(0));
-	
+
+//    prob.probToBoost();
+
     for (int i = 0; i < unary.cols; ++i) {
         for (int j = 0; j < unary.rows; ++j) {
             float maxprob = 0.f;
@@ -385,7 +398,10 @@ int main(int argc, char **argv) {
             unary.at<uchar>(j, i) = static_cast<uchar>(lid);
         }
     }
-	cv::Mat old_unary;
+
+    cv::imshow("unary before", 10 * unary);
+
+    cv::Mat old_unary;
 	int counter = 1;
 	do{
 		cout << "iteration " << counter++ << endl;

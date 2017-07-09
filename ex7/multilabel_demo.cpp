@@ -384,6 +384,12 @@ int main(int argc, char **argv) {
 
 //    prob.probToBoost();
 
+    ofstream myfile;
+    myfile.open ("outfile.txt");
+
+    myfile << unary.cols << ' ' << unary.rows << ' ' << prob.depth() << endl;
+
+    bool comma = false;
     for (int i = 0; i < unary.cols; ++i) {
         for (int j = 0; j < unary.rows; ++j) {
             float maxprob = 0.f;
@@ -393,11 +399,21 @@ int main(int argc, char **argv) {
                     maxprob = prob(i, j, k);
                     lid = k;
                 }
+
+                if (comma) {
+                    myfile << ' ';
+                }
+
+                cout << prob(i, j , k) << endl;
+                myfile << prob(i, j, k);
+                comma = true;
             }
 
             unary.at<uchar>(j, i) = static_cast<uchar>(lid);
         }
     }
+
+    myfile.close();
 
     cv::imshow("unary before", 10 * unary);
 

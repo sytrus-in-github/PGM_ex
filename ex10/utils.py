@@ -30,11 +30,15 @@ def read_unary(filename):
 
 def compute_binary(label1, label2, point1, point2, image):
     if label1 == label2:
-        return 0
+        return 0.
+
+    points_square_norm = squared_norm(point1, point2)
+    return w1 * np.exp(-points_square_norm / (2 * (theta_alpha ** 2)) -
+                       squared_norm(image[point1], image[point2]) / (2 * (theta_beta ** 2))) + \
+           w2 * np.exp(-points_square_norm / (2 * (theta_gamma ** 2)))
 
 if __name__ == '__main__':
     data, energies = read_unary('outfile.txt')
     print data.shape
     print np.max(data), np.min(data), np.mean(data)
     print np.max(energies), np.min(energies)
-    

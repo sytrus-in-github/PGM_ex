@@ -18,7 +18,8 @@ def squared_norm(p1, p2):
     return np.sum((np.array(p1)-np.array(p2))**2)
 
 
-def update_q(q_old, unary_energy, binary_energy):
+def update_q(q_old, unary_energy, binary_memmap_file):
+    binary_energy = np.memmap(binary_memmap_file, mode='r')
     col, row = q_old.shape    
     q_new = np.zeros_like(q_old)
     # update q_new    

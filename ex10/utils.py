@@ -13,6 +13,10 @@ def map_energy(unary):
     return -np.log(unary)
 
 
+def squared_norm(p1, p2):
+    return np.sum((np.array(p1)-np.array(p2))**2)
+
+
 def read_unary(filename):
     with open(filename, 'r') as filecontent:
         nbcol, nbrow, nbclass = [int(s) for s in filecontent.readline().split()]
@@ -33,3 +37,4 @@ if __name__ == '__main__':
     print data.shape
     print np.max(data), np.min(data), np.mean(data)
     print np.max(energies), np.min(energies)
+    

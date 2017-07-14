@@ -22,14 +22,17 @@ def squared_norm(p1, p2):
 
 def update_q(q_old, unary_energy, binary_memmap_file):
     binary_energy = np.memmap(binary_memmap_file, mode='r')
-    col, row = q_old.shape    
+    col, row, klass = q_old.shape
+    labels = np.maximum(q_old, axis = -1)
     q_new = np.zeros_like(q_old)
     # update q_new    
     for c in xrange(col):
         for r in xrange(row):
-            q_new[c, r] = np.exp(-unary_energy - binary_energy[c, r, :, :] * q_old)
+            label_i = labels[c,r]
+            message_i = (binary_energy[c, r, :, :] * (labels!=label_i) * q_old).reshape(-1,klass)
+            q_new[c, r, :] = np.exp(-unary_energy[c, r] - np.sum(message_i, axis=0))
     # normalize q_new to have 1 sum
-    q_new /= np.sum(q_new)
+    q_new /= np.sum(q_new, axis=-1)
 
     return q_new
 

@@ -18,10 +18,15 @@ def squared_norm(p1, p2):
     return np.sum((np.array(p1)-np.array(p2))**2)
 
 
-def update_q(q_old, image, unary, binary):
+def update_q(q_old, unary_energy, binary_energy):
     col, row = q_old.shape    
     q_new = np.zeros_like(q_old)
-    
+    # update q_new    
+    for c in xrange(col):
+        for r in xrange(row):
+            q_new[c,r] = np.exp(-unary_energy - binary_energy[c,r,:,:] * q_old)
+    # normalize q_new to have 1 sum
+    q_new /= np.sum(q_new)
     return q_new
 
 

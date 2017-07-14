@@ -20,9 +20,15 @@ def squared_norm(p1, p2):
     return np.sum((np.array(p1) - np.array(p2)) ** 2, axis=0)
 
 
-def update_q(q_old, image, unary, binary):
+def update_q(q_old, unary_energy, binary_energy):
     col, row = q_old.shape
     q_new = np.zeros_like(q_old)
+    # update q_new    
+    for c in xrange(col):
+        for r in xrange(row):
+            q_new[c, r] = np.exp(-unary_energy - binary_energy[c, r, :, :] * q_old)
+    # normalize q_new to have 1 sum
+    q_new /= np.sum(q_new)
 
     return q_new
 
@@ -54,7 +60,7 @@ def precompute_binary_map(image, image_name):
 
             binary_energy = coeff['w1'] * np.exp(-points_square_norm / (2 * (coeff['theta_alpha'] ** 2)) -
                                                  squared_norm(image[r, c], image_stacked) / (
-                                                 2 * (coeff['theta_beta'] ** 2))) + \
+                                                     2 * (coeff['theta_beta'] ** 2))) + \
                             coeff['w2'] * np.exp(-points_square_norm / (2 * (coeff['theta_gamma'] ** 2)))
 
             binary_map[r, c, :, :] = np.reshape(binary_energy, (row, col))

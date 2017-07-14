@@ -1,5 +1,9 @@
 import numpy as np
 from PIL import Image
+try:
+    import cPickle as pickle
+except:
+    import pickle
 
 coeff = {
     'w1': 10,
@@ -20,19 +24,19 @@ def squared_norm(p1, p2):
     return np.sum((np.array(p1) - np.array(p2)) ** 2, axis=0)
 
 
-def update_q(q_old, unary_energy, binary_memmap_file):
-    binary_energy = np.memmap(binary_memmap_file, mode='r')
+def update_q(q_old, unary_energy, binary_energy):
     col, row, klass = q_old.shape
-    labels = np.maximum(q_old, axis = -1)
+    labels = np.argmax(q_old, axis = -1)
     q_new = np.zeros_like(q_old)
     # update q_new    
     for c in xrange(col):
+        print c
         for r in xrange(row):
-            label_i = labels[c,r]
-            message_i = (binary_energy[c, r, :, :] * (labels!=label_i) * q_old).reshape(-1,klass)
+            label_i = labels[c, r]
+            message_i = (np.reshape(binary_energy[r, c, :, :].T * (labels!=label_i), (col, row, 1)) * q_old).reshape(-1,klass)
             q_new[c, r, :] = np.exp(-unary_energy[c, r] - np.sum(message_i, axis=0))
     # normalize q_new to have 1 sum
-    q_new /= np.sum(q_new, axis=-1)
+    q_new /= np.reshape(np.sum(q_new, axis=-1), (col, row, 1))
 
     return q_new
 
@@ -73,14 +77,26 @@ def precompute_binary_map(image, image_name):
 
 
 if __name__ == '__main__':
-    data, energies = read_unary('1_9_s_unary.txt')
+    data, unary_energies = read_unary('1_9_s_unary.txt')
     image = Image.open('in2329-supplementary_material_10/1_9_s.bmp').convert('L')
 
     image.load()
     image = np.asarray(image, dtype=np.float32)
+    row, col = image.shape
 
-    binary_map = precompute_binary_map(image, '1_9_s')
+    # binary_map = precompute_binary_map(image, '1_9_s')
 
-    print data.shape
-    print np.max(data), np.min(data), np.mean(data)
-    print np.max(energies), np.min(energies)
+    binary_energy = np.memmap('in2329-supplementary_material_10/1_9_s.memmap', mode='r', shape=(row, col, row, col))
+
+    q_old = data
+    for i in xrange(1):
+        q = update_q(q_old, unary_energies, binary_energy)
+        print np.mean(np.abs(q - q_old))
+        q_old = q
+
+    with open('in2329-supplementary_material_10/1_9_s_segmentation', 'w') as filecontent:
+        pickle.dump(q_old, filecontent, 2)
+
+    # print data.shape
+    # print np.max(data), np.min(data), np.mean(data)
+    # print np.max(unary_energies), np.min(unary_energies)

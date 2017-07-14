@@ -33,12 +33,14 @@ def update_q(q_old, unary_energy, binary_energy):
     for c in xrange(col):
         print c
         for r in xrange(row):
+            if not is_valid[c,r]:
+                q_new[c, r, :] = q_old[c, r, :]
+                continue
             label_i = labels[c, r]
             message_i = (np.reshape(binary_energy[r, c, :, :].T * (labels!=label_i), (col, row, 1)) * q_old).reshape(-1,klass)
             q_new[c, r, :] = np.exp(-unary_energy[c, r] - np.sum(message_i, axis=0))
     # normalize q_new to have 1 sum
     q_new /= np.reshape(np.sum(q_new, axis=-1), (col, row, 1))
-    q_new = np.where(is_valid, q_new, q_old)
 
     return q_new
 

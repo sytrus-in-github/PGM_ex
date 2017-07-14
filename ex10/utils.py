@@ -27,6 +27,7 @@ def squared_norm(p1, p2):
 def update_q(q_old, unary_energy, binary_energy):
     col, row, klass = q_old.shape
     labels = np.argmax(q_old, axis = -1)
+    is_valid = np.max(q_old, axis = -1) != 1.
     q_new = np.zeros_like(q_old)
     # update q_new    
     for c in xrange(col):
@@ -37,6 +38,7 @@ def update_q(q_old, unary_energy, binary_energy):
             q_new[c, r, :] = np.exp(-unary_energy[c, r] - np.sum(message_i, axis=0))
     # normalize q_new to have 1 sum
     q_new /= np.reshape(np.sum(q_new, axis=-1), (col, row, 1))
+    q_new = np.where(is_valid, q_new, q_old)
 
     return q_new
 

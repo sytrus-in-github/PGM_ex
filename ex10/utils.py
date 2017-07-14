@@ -1,11 +1,12 @@
 import numpy as np
 
-w1 = 10
-w2 = 3
-theta_alpha = 80
-theta_beta = 13
-theta_gamma = 3
-
+coeff = {
+'w1' : 10,
+'w2' : 3,
+'theta_alpha' : 80,
+'theta_beta' : 13,
+'theta_gamma' : 3,
+}
 
 def map_energy(unary):
     if unary == 0:
@@ -15,6 +16,13 @@ def map_energy(unary):
 
 def squared_norm(p1, p2):
     return np.sum((np.array(p1)-np.array(p2))**2)
+
+
+def update_q(q_old, image, unary, binary):
+    col, row = q_old.shape    
+    q_new = np.zeros_like(q_old)
+    
+    return q_new
 
 
 def read_unary(filename):

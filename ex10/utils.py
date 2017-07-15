@@ -24,6 +24,19 @@ def squared_norm(p1, p2):
     return np.sum((np.array(p1) - np.array(p2)) ** 2, axis=0)
 
 
+def diagnosis(q_old, q_new, normalizer):
+    col, row, klass = q_old.shape
+    problems = []
+    for c in xrange(col):
+        for r in xrange(row):
+            if normalizer[c,r] == 0:
+                print c, r
+                print q_old[c,r,:]
+                print q_new[c,r,:]
+                problems.append((c, r, q_old[c,r,:], q_new[c,r,:]))
+    return problems
+
+
 def update_q(q_old, unary_energy, binary_energy):
     col, row, klass = q_old.shape
     labels = np.argmax(q_old, axis = -1)
@@ -41,11 +54,10 @@ def update_q(q_old, unary_energy, binary_energy):
             q_new[c, r, :] = np.exp(-unary_energy[c, r, :] - np.sum(message_i, axis=0))
     # normalize q_new to have 1 sum
     normalizer = np.reshape(np.sum(q_new, axis=-1), (col, row, 1))
-
-    has_nan = np.sum(normalizer == 0)
-
-    if has_nan > 0:
-        print has_nan
+    
+    problems = diagnosis(q_old, q_new, normalizer)    
+    
+    print 'problem entries number:', len(problems)
 
     q_new /= normalizer
 

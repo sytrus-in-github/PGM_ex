@@ -54,14 +54,15 @@ def update_q(q_old, unary_energy, binary_energy):
             message_i = (np.expand_dims(binary_energy[r, c, :, :].T * (labels != label_i), 2) * q_old).reshape(-1, klass)
 
             un_en = unary_energy[c, r, :]
-            un_en_mask = np.isinf(un_en)
-
+#            un_en_mask = np.isinf(un_en)
+#
             np_sum = np.sum(message_i, axis=0)
-            np_sum_mask = np.isinf(np_sum)
+#            np_sum_mask = np.isinf(np_sum)
 
             # print np.max(un_en * (1 - un_en)), np.max(np_sum)
-
-            energy_update = np.exp(-un_en - np_sum)
+            exponent = -un_en - np_sum
+            exponent -= np.max(exponent)
+            energy_update = np.exp(exponent)
             q_new[c, r, :] = energy_update
 
             if np.sum(energy_update) != 0:

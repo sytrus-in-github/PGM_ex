@@ -41,8 +41,8 @@ def get_neighbour_factor(labels, horizontal_binary, vertical_binary):
 
     is_l_0 = labels[:, :-1] == 0
     is_r_0 = labels[:, 1:] == 0
-    is_u_0 = labels[1:, :] == 0
-    is_d_0 = labels[:-1, :] == 0
+    is_d_0 = labels[1:, :] == 0
+    is_u_0 = labels[:-1, :] == 0
 
     prod_neighbor_factor[:, :-1, 0] *= np.where(is_l_0, 1, horizontal_binary)
     prod_neighbor_factor[:, :-1, 1] *= np.where(is_l_0, horizontal_binary, 1)
@@ -64,7 +64,7 @@ def gibbs_sampling(img, unary, nb_iteration, cut_ratio, w):
     samples = np.zeros((nb_iteration - cut_value, num_row, num_col), dtype=np.float64)
     horizontal_binary, vertical_binary = compute_binary(img, w)
 
-    current_y = unary > 0.5
+    current_y = unary
 
     for i in xrange(nb_iteration):
         factor_product = get_neighbour_factor(current_y, horizontal_binary, vertical_binary)
@@ -83,16 +83,16 @@ def gibbs_sampling(img, unary, nb_iteration, cut_ratio, w):
 
 
 if __name__ == '__main__':
-    img_unaries = read_unary('in2329-supplementary_material_11/5_18_s_dict.yml')
+    img_unaries = read_unary('in2329-supplementary_material_11/5_21_s_dict.yml')
 
-    img = Image.open('in2329-supplementary_material_11/5_18_s.bmp').convert('RGB')
+    img = Image.open('in2329-supplementary_material_11/5_21_s.bmp').convert('RGB')
 
     img = np.asarray(img, dtype=np.float64) / 255.
-    prediction = gibbs_sampling(img, img_unaries, 1000, 0.8, 10)
+    prediction = gibbs_sampling(img, img_unaries, 2000, 0.8, 4.2)
 
-    result = prediction * 255
+    result = (prediction > 0.5) * 255
 
-    plt.imshow(img_unaries)
+    plt.imshow((img_unaries > 0.5) * 255)
     plt.draw()
 
     plt.figure()

@@ -35,14 +35,26 @@ def compute_binary(img, w):
 
 
 def get_neighbour_factor(labels, horizontal_binary, vertical_binary):
-    rows = horizontal_binary.shape[0]
-    cols = vertical_binary.shape[1]
+#    rows = horizontal_binary.shape[0]
+#    cols = vertical_binary.shape[1]
 #    horizontal_padded = np.pad(horizontal_binary, ((0,0),(1,1)), 'constant', constant_values = 1)
 #    vertical_padded = np.pad(vertical_binary, ((1,1),(0,0)), 'constant', constant_values = 1)
     prod_neighbor_factor = np.ones(list(labels.shape).append(2))
 
-    horizontal_same = horizontal_binary[:, 1:] == horizontal_binary[:-1, :]
-    vertical_same = vertical_binary[:, 1:] == vertical_binary[:-1, :]
+    is_l_0 = label[:, :-1] == 0
+    is_r_0 = label[:, 1:] == 0
+    is_u_0 = label[1:, :] == 0
+    is_d_0 = label[:-1, :] == 0
+    
+    prod_neighbor_factor[:, :-1, 0] *= np.where(is_l_0, 1, horizontal_binary)
+    prod_neighbor_factor[:, :-1, 1] *= np.where(is_l_0, horizontal_binary, 1)
+    prod_neighbor_factor[:, 1:, 0] *= np.where(is_r_0, 1, horizontal_binary)
+    prod_neighbor_factor[:, 1:, 1] *= np.where(is_r_0, horizontal_binary, 1)
+    prod_neighbor_factor[1:, :, 0] *= np.where(is_u_0, 1, vertical_binary)
+    prod_neighbor_factor[1:, :, 1] *= np.where(is_u_0, vertical_binary, 1)
+    prod_neighbor_factor[:-1, :, 0] *= np.where(is_d_0, 1, vertical_binary)
+    prod_neighbor_factor[:-1, :, 1] *= np.where(is_d_0, vertical_binary, 1)
+    
 
     np.where(horizontal_same, 1, horizontal_binary)
     np.where(vertical_same, 1, horizontal_binary)

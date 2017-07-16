@@ -25,7 +25,19 @@ def compute_binary(img, w):
 
 
 def get_neighbour_factor(coordinate, horizontal_binary, vertical_binary):
-    return []
+    r, c = coordinate
+    rows = horizontal_binary.shape[0]
+    cols = vertical_binary.shape[1]
+    factors = []
+    if r > 0:
+        factors.append(vertical_binary[r-1, c])
+    if r < rows - 1:
+        factors.append(vertical_binary[r, c])
+    if c > 0:
+        factors.append(horizontal_binary[r, c-1])
+    if c < cols - 1:
+        factors.append(horizontal_binary[r, c])
+    return factors
     
     
 def gibbs_sampling(img, unary, nb_iteration, cut_ratio, w):

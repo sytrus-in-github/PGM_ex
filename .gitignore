@@ -5,3 +5,5 @@
 cmake-build-debug/
 *.pyc
 *.memmap
+.DS_Store
+12_33_s_segmentation

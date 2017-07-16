@@ -370,7 +370,7 @@ int main(int argc, char **argv) {
     printf("load unary potentials\n");
 
     // the filenames of image and its unary should match!
-    std::string rgbfile = "../1_9_s.bmp", unaryfile = "../1_9_s.c_unary";
+    std::string rgbfile = "../1_27_s.bmp", unaryfile = "../1_27_s.c_unary";
 
     // load the probability distribution data
     ProbImage prob;
@@ -385,7 +385,7 @@ int main(int argc, char **argv) {
 //    prob.probToBoost();
 
     ofstream myfile;
-    myfile.open ("outfile.txt");
+    myfile.open ("1_27_s_unary.txt");
 
     myfile << unary.cols << ' ' << unary.rows << ' ' << prob.depth() << endl;
 
@@ -415,19 +415,19 @@ int main(int argc, char **argv) {
 
     myfile.close();
 
-    cv::imshow("unary before", 10 * unary);
-
-    cv::Mat old_unary;
-	int counter = 1;
-	do{
-		cout << "iteration " << counter++ << endl;
-		unary.copyTo(old_unary);
-		calculate_energies(prob, unary, rgb);
-	} while (not_same(unary, old_unary));
-
-	// visualization
-    cv::imshow("rgb", rgb);
-    cv::imshow("unary", 10 * unary);
-    cv::waitKey();
+//    cv::imshow("unary before", 10 * unary);
+//
+//    cv::Mat old_unary;
+//	int counter = 1;
+//	do{
+//		cout << "iteration " << counter++ << endl;
+//		unary.copyTo(old_unary);
+//		calculate_energies(prob, unary, rgb);
+//	} while (not_same(unary, old_unary));
+//
+//	// visualization
+//    cv::imshow("rgb", rgb);
+//    cv::imshow("unary", 10 * unary);
+//    cv::waitKey();
     return 0;
 }

@@ -1,5 +1,6 @@
 import numpy as np
 from PIL import Image
+
 try:
     import cPickle as pickle
 except:
@@ -29,34 +30,50 @@ def diagnosis(q_old, q_new, normalizer):
     problems = []
     for c in xrange(col):
         for r in xrange(row):
-            if normalizer[c,r] == 0:
+            if normalizer[c, r] == 0:
                 print c, r
-                print q_old[c,r,:]
-                print q_new[c,r,:]
-                problems.append((c, r, q_old[c,r,:], q_new[c,r,:]))
+                print q_old[c, r, :]
+                print q_new[c, r, :]
+                problems.append((c, r, q_old[c, r, :], q_new[c, r, :]))
     return problems
 
 
 def update_q(q_old, unary_energy, binary_energy):
     col, row, klass = q_old.shape
-    labels = np.argmax(q_old, axis = -1)
-    is_valid = np.max(q_old, axis = -1) != 1.
-    q_new = np.zeros_like(q_old)
+    labels = np.argmax(q_old, axis=-1)
+    is_valid = np.max(q_old, axis=-1) != 1.
+    q_new = np.zeros(q_old.shape)
     # update q_new
     for c in xrange(col):
         # print c
         for r in xrange(row):
-            if not is_valid[c,r]:
+            if not is_valid[c, r]:
                 q_new[c, r, :] = q_old[c, r, :]
                 continue
             label_i = labels[c, r]
-            message_i = (np.reshape(binary_energy[r, c, :, :].T * (labels!=label_i), (col, row, 1)) * q_old).reshape(-1,klass)
-            q_new[c, r, :] = np.exp(-unary_energy[c, r, :] - np.sum(message_i, axis=0))
+            message_i = (np.expand_dims(binary_energy[r, c, :, :].T * (labels != label_i), 2) * q_old).reshape(-1, klass)
+
+            un_en = unary_energy[c, r, :]
+            un_en_mask = np.isinf(un_en)
+
+            np_sum = np.sum(message_i, axis=0)
+            np_sum_mask = np.isinf(np_sum)
+
+            # print np.max(un_en * (1 - un_en)), np.max(np_sum)
+
+            energy_update = np.exp(-un_en - np_sum)
+            q_new[c, r, :] = energy_update
+
+            if np.sum(energy_update) != 0:
+                q_new[c, r, :] = energy_update
+            else:
+                q_new[c, r, :] = q_old[c, r, :]
+
     # normalize q_new to have 1 sum
-    normalizer = np.reshape(np.sum(q_new, axis=-1), (col, row, 1))
-    
-    problems = diagnosis(q_old, q_new, normalizer)    
-    
+    normalizer = np.expand_dims(np.sum(q_new, axis=-1), 2)
+
+    problems = diagnosis(q_old, q_new, normalizer)
+
     print 'problem entries number:', len(problems)
 
     q_new /= normalizer
@@ -78,10 +95,10 @@ def read_unary(filename):
 def precompute_binary_map(image, image_name):
     filename = 'in2329-supplementary_material_10/' + image_name + '.memmap'
 
-    row, col = image.shape
-    binary_map = np.memmap(filename, dtype=np.float32, mode='w+', shape=(row, col, row, col))
+    row, col, _ = image.shape
+    binary_map = np.memmap(filename, dtype=np.float64, mode='w+', shape=(row, col, row, col))
 
-    image_stacked = np.reshape(image, -1)
+    image_stacked = np.reshape(image, (-1, 3)).T
     grid = np.mgrid[0:row, 0:col].reshape(2, -1)
 
     for r in xrange(row):
@@ -90,7 +107,7 @@ def precompute_binary_map(image, image_name):
             points_square_norm = squared_norm(grid, [[r], [c]])
 
             binary_energy = coeff['w1'] * np.exp(-points_square_norm / (2 * (coeff['theta_alpha'] ** 2)) -
-                                                 squared_norm(image[r, c], image_stacked) / (
+                                                 squared_norm(np.expand_dims(image[r, c, :], 1), image_stacked) / (
                                                      2 * (coeff['theta_beta'] ** 2))) + \
                             coeff['w2'] * np.exp(-points_square_norm / (2 * (coeff['theta_gamma'] ** 2)))
 
@@ -100,26 +117,34 @@ def precompute_binary_map(image, image_name):
 
 
 if __name__ == '__main__':
-    data, unary_energies = read_unary('1_9_s_unary.txt')
-    image = Image.open('in2329-supplementary_material_10/1_9_s.bmp').convert('L')
+    data, unary_energies = read_unary('12_33_s_unary.txt')
+    image = Image.open('in2329-supplementary_material_10/12_33_s.bmp').convert('RGB')
+
+    nan_count = np.sum(np.isnan(unary_energies))
+    print nan_count
+
+    isinf = np.isinf(unary_energies)
+    energies_isinf = np.where(isinf, 0, unary_energies)
+    print 'Max unary;', np.max(energies_isinf)
 
     image.load()
-    image = np.asarray(image, dtype=np.float32)
-    row, col = image.shape
+    image = np.asarray(image, dtype=np.float64)
+    row, col, _ = image.shape
 
-    # binary_map = precompute_binary_map(image, '1_9_s')
+    # binary_map = precompute_binary_map(image, '12_33_s')
 
-    binary_energy = np.memmap('in2329-supplementary_material_10/1_9_s.memmap', mode='r', shape=(row, col, row, col))
+    binary_energy = np.memmap('in2329-supplementary_material_10/12_33_s.memmap', mode='r', shape=(row, col, row, col))
 
     q_old = data
-    for i in xrange(1):
+    for i in xrange(5):
+        print 'Iteration: ', i + 1
         q = update_q(q_old, unary_energies, binary_energy)
         print np.mean(np.abs(q - q_old))
         q_old = q
 
-    with open('in2329-supplementary_material_10/1_9_s_segmentation', 'w') as filecontent:
+    with open('in2329-supplementary_material_10/12_33_s_segmentation', 'w') as filecontent:
         pickle.dump(q_old, filecontent, 2)
-
-    # print data.shape
-    # print np.max(data), np.min(data), np.mean(data)
-    # print np.max(unary_energies), np.min(unary_energies)
+    #
+    #     # print data.shape
+    #     # print np.max(data), np.min(data), np.mean(data)
+    #     # print np.max(unary_energies), np.min(unary_energies)

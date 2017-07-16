@@ -19,8 +19,8 @@ def read_unary(yml_file):
         
 
 def compute_binary(img, w):
-    diff_x2 = (img[:, 1:] - img[:, :-1]) ** 2
-    diff_y2 = (img[1:, :] - img[:-1, :]) ** 2
+    diff_x2 = (img[:, 1:, :] - img[:, :-1, :]) ** 2
+    diff_y2 = (img[1:, :, :] - img[:-1, :, :]) ** 2
 
     horizontal_binary = np.exp(-w * np.exp(-LAMBDA * diff_x2))
     vertical_binary = np.exp(-w * np.exp(-LAMBDA * diff_y2))
@@ -43,9 +43,14 @@ def get_neighbour_factor(coordinate, horizontal_binary, vertical_binary):
         factors.append(horizontal_binary[r, c])
     return factors
 
-        
+
 def gibbs_sampling(img, unary, nb_iteration, cut_ratio, w):
-    predicted_labels = None
+    cut_value = int(cut_ratio * nb_iteration)
+    num_row, num_col, _ = img.shape
+    samples = np.zeros()
+
+    for i in xrange(nb_iteration):
+
     return predicted_labels
 
 

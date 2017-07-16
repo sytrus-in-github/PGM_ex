@@ -40,8 +40,13 @@ def get_neighbour_factor(labels, horizontal_binary, vertical_binary):
 #    horizontal_padded = np.pad(horizontal_binary, ((0,0),(1,1)), 'constant', constant_values = 1)
 #    vertical_padded = np.pad(vertical_binary, ((1,1),(0,0)), 'constant', constant_values = 1)
     prod_neighbor_factor = np.ones(list(labels.shape).append(2))
-    
-    
+
+    horizontal_same = horizontal_binary[:, 1:] == horizontal_binary[:-1, :]
+    vertical_same = vertical_binary[:, 1:] == vertical_binary[:-1, :]
+
+    np.where(horizontal_same, 1, horizontal_binary)
+    np.where(vertical_same, 1, horizontal_binary)
+
     return prod_neighbor_factor
 
 

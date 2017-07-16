@@ -33,20 +33,15 @@ def compute_binary(img, w):
     return horizontal_binary, vertical_binary
 
 
-def get_neighbour_factor(coordinate, horizontal_binary, vertical_binary):
-    r, c = coordinate
+def get_neighbour_factor(labels, horizontal_binary, vertical_binary):
     rows = horizontal_binary.shape[0]
     cols = vertical_binary.shape[1]
-    factors = []
-    if r > 0:
-        factors.append(vertical_binary[r - 1, c])
-    if r < rows - 1:
-        factors.append(vertical_binary[r, c])
-    if c > 0:
-        factors.append(horizontal_binary[r, c - 1])
-    if c < cols - 1:
-        factors.append(horizontal_binary[r, c])
-    return factors
+#    horizontal_padded = np.pad(horizontal_binary, ((0,0),(1,1)), 'constant', constant_values = 1)
+#    vertical_padded = np.pad(vertical_binary, ((1,1),(0,0)), 'constant', constant_values = 1)
+    prod_neighbor_factor = np.ones(list(labels.shape).append(2))
+    
+    
+    return prod_neighbor_factor
 
 
 def gibbs_sampling(img, unary, nb_iteration, cut_ratio, w):

@@ -1,6 +1,7 @@
 import numpy as np
 import yaml
 from matplotlib import pyplot as plt
+from PIL import Image
 
 NP_DTYPE_MAP = {'f': np.float32, 'd': np.float64}
 LAMBDA = 0.5
@@ -35,7 +36,8 @@ def compute_binary(img, w):
 
 
 def get_neighbour_factor(labels, horizontal_binary, vertical_binary):
-    prod_neighbor_factor = np.ones(list(labels.shape).append(2))
+    l = list(labels.shape)
+    prod_neighbor_factor = np.ones(l + [2])
 
     is_l_0 = labels[:, :-1] == 0
     is_r_0 = labels[:, 1:] == 0
@@ -59,7 +61,7 @@ def gibbs_sampling(img, unary, nb_iteration, cut_ratio, w):
 
     num_row, num_col, _ = img.shape
 
-    samples = np.zeros(nb_iteration - cut_value, num_row, num_col)
+    samples = np.zeros((nb_iteration - cut_value, num_row, num_col), dtype=np.float64)
     horizontal_binary, vertical_binary = compute_binary(img, w)
 
     current_y = unary > 0.5
@@ -68,7 +70,7 @@ def gibbs_sampling(img, unary, nb_iteration, cut_ratio, w):
         factor_product = get_neighbour_factor(current_y, horizontal_binary, vertical_binary)
         factor_product = factor_product * np.stack([1 - unary, unary], -1)
 
-        distribution = factor_product / np.sum(factor_product, axis=2)
+        distribution = factor_product / np.expand_dims(np.sum(factor_product, axis=2), 2)
         uniform_sample = np.random.rand(num_row, num_col)
 
         current_y = uniform_sample > distribution[:, :, 0]
@@ -81,6 +83,18 @@ def gibbs_sampling(img, unary, nb_iteration, cut_ratio, w):
 
 
 if __name__ == '__main__':
-    img = read_unary('in2329-supplementary_material_11/5_18_s_dict.yml')
-    plt.imshow(img)
+    img_unaries = read_unary('in2329-supplementary_material_11/5_18_s_dict.yml')
+
+    img = Image.open('in2329-supplementary_material_11/5_18_s.bmp').convert('RGB')
+
+    img = np.asarray(img, dtype=np.float64) / 255.
+    prediction = gibbs_sampling(img, img_unaries, 1000, 0.8, 10)
+
+    result = prediction * 255
+
+    plt.imshow(img_unaries)
+    plt.draw()
+
+    plt.figure()
+    plt.imshow(result)
     plt.show()

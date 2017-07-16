@@ -27,6 +27,7 @@ def compute_binary(img, w):
     diff_x2 = squared_norm(img[:, 1:, :], img[:, :-1, :])
     diff_y2 = squared_norm(img[1:, :, :], img[:-1, :, :])
 
+    #todo: check if numerically stable
     horizontal_binary = np.exp(-w * np.exp(-LAMBDA * diff_x2))
     vertical_binary = np.exp(-w * np.exp(-LAMBDA * diff_y2))
 
@@ -51,10 +52,17 @@ def get_neighbour_factor(coordinate, horizontal_binary, vertical_binary):
 
 def gibbs_sampling(img, unary, nb_iteration, cut_ratio, w):
     cut_value = int(cut_ratio * nb_iteration)
+
     num_row, num_col, _ = img.shape
+
     samples = np.zeros(nb_iteration - cut_value, num_row, num_col)
+    horizontal_binary, vertical_binary = compute_binary(img, w)
+
+    current_y = unary
 
     for i in xrange(nb_iteration):
+
+        
 
     return predicted_labels
 

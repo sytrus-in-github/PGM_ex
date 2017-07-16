@@ -5,6 +5,7 @@ from matplotlib import pyplot as plt
 NP_DTYPE_MAP = {'f': np.float32, 'd': np.float64}
 LAMBDA = 0.5
 
+
 def cvDat2nparray(cvdict):
     return np.array(cvdict['data'],
                     dtype=NP_DTYPE_MAP[cvdict['dt']]).reshape(cvdict['rows'],
@@ -16,11 +17,15 @@ def read_unary(yml_file):
         cvdict = yaml.load(filecontent)['unary']
         print cvdict.keys()
         return cvDat2nparray(cvdict)
-        
+
+
+def squared_norm(p1, p2):
+    return np.sum((np.array(p1) - np.array(p2)) ** 2, axis=2)
+
 
 def compute_binary(img, w):
-    diff_x2 = (img[:, 1:, :] - img[:, :-1, :]) ** 2
-    diff_y2 = (img[1:, :, :] - img[:-1, :, :]) ** 2
+    diff_x2 = squared_norm(img[:, 1:, :], img[:, :-1, :])
+    diff_y2 = squared_norm(img[1:, :, :], img[:-1, :, :])
 
     horizontal_binary = np.exp(-w * np.exp(-LAMBDA * diff_x2))
     vertical_binary = np.exp(-w * np.exp(-LAMBDA * diff_y2))
@@ -34,11 +39,11 @@ def get_neighbour_factor(coordinate, horizontal_binary, vertical_binary):
     cols = vertical_binary.shape[1]
     factors = []
     if r > 0:
-        factors.append(vertical_binary[r-1, c])
+        factors.append(vertical_binary[r - 1, c])
     if r < rows - 1:
         factors.append(vertical_binary[r, c])
     if c > 0:
-        factors.append(horizontal_binary[r, c-1])
+        factors.append(horizontal_binary[r, c - 1])
     if c < cols - 1:
         factors.append(horizontal_binary[r, c])
     return factors
@@ -47,7 +52,7 @@ def get_neighbour_factor(coordinate, horizontal_binary, vertical_binary):
 def gibbs_sampling(img, unary, nb_iteration, cut_ratio, w):
     cut_value = int(cut_ratio * nb_iteration)
     num_row, num_col, _ = img.shape
-    samples = np.zeros()
+    samples = np.zeros(nb_iteration - cut_value, num_row, num_col)
 
     for i in xrange(nb_iteration):
 

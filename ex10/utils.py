@@ -63,12 +63,13 @@ def update_q(q_old, unary_energy, binary_energy):
             exponent = -un_en - np_sum
             exponent -= np.max(exponent)
             energy_update = np.exp(exponent)
+
             q_new[c, r, :] = energy_update
 
-            if np.sum(energy_update) != 0:
-                q_new[c, r, :] = energy_update
-            else:
-                q_new[c, r, :] = q_old[c, r, :]
+            # if np.sum(energy_update) != 0:
+            #     q_new[c, r, :] = energy_update
+            # else:
+            #     q_new[c, r, :] = q_old[c, r, :]
 
     # normalize q_new to have 1 sum
     normalizer = np.expand_dims(np.sum(q_new, axis=-1), 2)
@@ -129,7 +130,7 @@ if __name__ == '__main__':
     print 'Max unary;', np.max(energies_isinf)
 
     image.load()
-    image = np.asarray(image, dtype=np.float64)
+    image = np.asarray(image, dtype=np.float64) / 255
     row, col, _ = image.shape
 
     # binary_map = precompute_binary_map(image, '12_33_s')

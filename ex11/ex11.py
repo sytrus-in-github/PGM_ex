@@ -19,6 +19,19 @@ def read_unary(yml_file):
         return cvDat2nparray(cvdict)
         
 
+def compute_binary(img, w):
+    horizontal_binary, vertical_binary  = None, None
+    return horizontal_binary, vertical_binary 
+
+
+def get_neighbour_factor(coordinate, horizontal_binary, vertical_binary):
+    return []
+    
+    
+def gibbs_sampling(img, unary, nb_iteration, cut_ratio, w):
+    predicted_labels = None
+    return predicted_labels
+
 
 if __name__ == '__main__':
     img = read_unary('in2329-supplementary_material_11/5_18_s_dict.yml')

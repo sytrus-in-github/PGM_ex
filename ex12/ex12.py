@@ -113,6 +113,16 @@ def gridGraphCut(unary, horizontal_binary, vertical_binary):
     nodeids = g.add_grid_nodes((nbrow, nbcol))
     # g.add_grid_edges(nodeids, binary)
     g.add_grid_tedges(nodeids, unary[:, :, 0], unary[:, :, 1])
+    # add horizontal binary weights
+    for r in xrange(nbrow):
+        for c in xrange(nbcol-1):
+            energy = horizontal_binary[r,c]
+            g.add_edge(nodeids[r,c], nodeids[r, c+1], energy, energy)
+    # add vertical binary weights  
+    for r in xrange(nbrow-1):
+        for c in xrange(nbcol):
+            energy = vertical_binary[r,c]
+            g.add_edge(nodeids[r,c], nodeids[r+1, c], energy, energy)
     cutValue = g.maxflow()
     isSource = g.get_grid_segments(nodeids)
 

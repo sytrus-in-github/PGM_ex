@@ -1,4 +1,5 @@
 */build/*
+*/data/*
 *.asv
 *.m~
 .idea/

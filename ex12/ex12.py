@@ -111,6 +111,7 @@ if __name__ == '__main__':
         img = Image.open(os.path.join(train_directory, img_name)).convert('RGB')
         unaries = read_unary(os.path.join(unary_directory, unary_name))
 
+        print 'Computing ground truth for image: ', img_name
         prediction = gibbs_sampling(img, unaries, 2000, 0.8, 4.2)
         result = (prediction > 0.5) * 255
 

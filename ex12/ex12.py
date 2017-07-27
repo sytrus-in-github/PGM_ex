@@ -13,7 +13,7 @@ def convertBadOpenCVYAMLString(string):
     bad_head = "%YAML:1.0\nunary: !!opencv-matrix"
     good_head = "%YAML 1.0\n---\nunary: !!map"
     if string.startswith(bad_head):
-        string = good_head +string[len(bad_head):]
+        string = good_head + string[len(bad_head):]
     else:
         print 'not changed.'
     return string
@@ -36,6 +36,16 @@ def read_unary(yml_file):
 
 def squared_norm(p1, p2):
     return np.sum((np.array(p1) - np.array(p2)) ** 2, axis=2)
+
+
+def compute_energy(img):
+    diff_x2 = squared_norm(img[:, 1:, :], img[:, :-1, :])
+    diff_y2 = squared_norm(img[1:, :, :], img[:-1, :, :])
+
+    horizontal_binary = np.exp(-LAMBDA * diff_x2)
+    vertical_binary = np.exp(-LAMBDA * diff_y2)
+
+    return horizontal_binary, vertical_binary
 
 
 def compute_binary(img, w):
@@ -101,8 +111,8 @@ def gridGraphCut(unary, horizontal_binary, vertical_binary):
     nbrow, nbcol = unary.shape
     g = maxflow.Graph[float]()
     nodeids = g.add_grid_nodes((nbrow, nbcol))
-    #g.add_grid_edges(nodeids, binary)
-    g.add_grid_tedges(nodeids, unary[:,:,0], unary[:,:,1])
+    # g.add_grid_edges(nodeids, binary)
+    g.add_grid_tedges(nodeids, unary[:, :, 0], unary[:, :, 1])
     cutValue = g.maxflow()
     isSource = g.get_grid_segments(nodeids)
 
@@ -120,25 +130,28 @@ if __name__ == '__main__':
         img = Image.open(os.path.join(train_directory, img_name)).convert('RGB')
         unaries = read_unary(os.path.join(unary_directory, unary_name))
 
+        img = np.asarray(img, dtype=np.float64) / 255.
+
         print 'Computing ground truth for image: ', img_name
         prediction = gibbs_sampling(img, unaries, 2000, 0.8, 4.2)
         result = (prediction > 0.5) * 255
+        result = result.astype(np.uint8)
 
-        result_image_name = os.path.join('cows-groundtruth', img_name)
+        result_image_name = os.path.join('data/cows-groundtruth', img_name)
         Image.fromarray(result).save(result_image_name)
 
-    # img_unaries = read_unary('in2329-supplementary_material_11/5_21_s_dict.yml')
-    #
-    # img = Image.open('in2329-supplementary_material_11/5_21_s.bmp').convert('RGB')
-    #
-    # img = np.asarray(img, dtype=np.float64) / 255.
-    # prediction = gibbs_sampling(img, img_unaries, 2000, 0.8, 4.2)
-    #
-    # result = (prediction > 0.5) * 255
-    #
-    # plt.imshow((img_unaries > 0.5) * 255)
-    # plt.draw()
-    #
-    # plt.figure()
-    # plt.imshow(result)
-    # plt.show()
+        # img_unaries = read_unary('in2329-supplementary_material_11/5_21_s_dict.yml')
+        #
+        # img = Image.open('in2329-supplementary_material_11/5_21_s.bmp').convert('RGB')
+        #
+        # img = np.asarray(img, dtype=np.float64) / 255.
+        # prediction = gibbs_sampling(img, img_unaries, 2000, 0.8, 4.2)
+        #
+        # result = (prediction > 0.5) * 255
+        #
+        # plt.imshow((img_unaries > 0.5) * 255)
+        # plt.draw()
+        #
+        # plt.figure()
+        # plt.imshow(result)
+        # plt.show()

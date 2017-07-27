@@ -17,7 +17,8 @@ def cvDat2nparray(cvdict):
 def read_unary(yml_file):
     with open(yml_file) as filecontent:
         string = filecontent.read()
-        string = "%YAML 1.0"+os.linesep+"---" + string[len("%YAML:1.0"):] if string.startswith("%YAML:1.0") else string
+        string = "%YAML 1.0" + os.linesep + "---" + string[len("%YAML:1.0"):] if string.startswith(
+            "%YAML:1.0") else string
         cvdict = yaml.load(string)['unary']
         print cvdict.keys()
         return cvDat2nparray(cvdict)
@@ -86,18 +87,34 @@ def gibbs_sampling(img, unary, nb_iteration, cut_ratio, w):
 
 
 if __name__ == '__main__':
-    img_unaries = read_unary('in2329-supplementary_material_11/5_21_s_dict.yml')
+    train_directory = 'data/cows-training'
+    unary_directory = 'data/cows-unary'
 
-    img = Image.open('in2329-supplementary_material_11/5_21_s.bmp').convert('RGB')
+    image_filenames = [fn for fn in os.listdir(train_directory) if fn.endswith('.bmp')]
+    unaries_filenames = [fn for fn in os.listdir(unary_directory) if fn.endswith('.yml')]
 
-    img = np.asarray(img, dtype=np.float64) / 255.
-    prediction = gibbs_sampling(img, img_unaries, 2000, 0.8, 4.2)
+    for img_name, unary_name in zip(image_filenames, unaries_filenames):
+        img = Image.open(os.path.join(train_directory, img_name)).convert('RGB')
+        unaries = read_unary(os.path.join(unary_directory, unary_name))
 
-    result = (prediction > 0.5) * 255
+        prediction = gibbs_sampling(img, unaries, 2000, 0.8, 4.2)
+        result = (prediction > 0.5) * 255
 
-    plt.imshow((img_unaries > 0.5) * 255)
-    plt.draw()
+        result_image_name = os.path.join('cows-groundtruth', img_name)
+        Image.fromarray(result).save(result_image_name)
 
-    plt.figure()
-    plt.imshow(result)
-    plt.show()
+    # img_unaries = read_unary('in2329-supplementary_material_11/5_21_s_dict.yml')
+    #
+    # img = Image.open('in2329-supplementary_material_11/5_21_s.bmp').convert('RGB')
+    #
+    # img = np.asarray(img, dtype=np.float64) / 255.
+    # prediction = gibbs_sampling(img, img_unaries, 2000, 0.8, 4.2)
+    #
+    # result = (prediction > 0.5) * 255
+    #
+    # plt.imshow((img_unaries > 0.5) * 255)
+    # plt.draw()
+    #
+    # plt.figure()
+    # plt.imshow(result)
+    # plt.show()

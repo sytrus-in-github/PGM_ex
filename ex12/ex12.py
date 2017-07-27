@@ -108,10 +108,9 @@ def gibbs_sampling(img, unary, nb_iteration, cut_ratio, w):
 
 def gridGraphCut(unary, horizontal_binary, vertical_binary):
     """graph cut for 2d grid with pott-model binary cost"""
-    nbrow, nbcol = unary.shape
+    nbrow, nbcol, _ = unary.shape
     g = maxflow.Graph[float]()
     nodeids = g.add_grid_nodes((nbrow, nbcol))
-    # g.add_grid_edges(nodeids, binary)
     g.add_grid_tedges(nodeids, unary[:, :, 0], unary[:, :, 1])
     # add horizontal binary weights
     for r in xrange(nbrow):
@@ -126,7 +125,59 @@ def gridGraphCut(unary, horizontal_binary, vertical_binary):
     cutValue = g.maxflow()
     isSource = g.get_grid_segments(nodeids)
 
-    return cutValue, isSource
+    return cutValue, np.logical_not(isSource)
+
+
+def getMasks(labeling):
+    nbrow, nbcol = labeling.shape
+    horizontal_mask = labeling[:, :-1] == labeling[:, 1:]
+    vertical_mask = labeling[:-1, :] == labeling[1:, :]
+    return horizontal_mask, vertical_mask
+
+
+def lossMinimizingParameterLearning(imgs, gts, unaries, T, C):
+    """Subgradient descent S-SVM learning. See page 26 of lecture slides 11.
+    imgs: list of images as float ndarray
+    gts: list of groundtruths as boolean ndarray (0 background / 1 foreground)
+    unaries: list of unary eneries as float ndarray (not factors !!!)
+    T: number of iterations as int
+    C: regularizer as number"""
+    N = len(imgs)
+    C = float(C)
+    w = 0.
+    binaries = [compute_energy(img) for img in imgs]
+    imgs = None # release useless data from memory
+    # get ground-truth horizontal/vertical masks for binary energy
+    gt_masks = [getMasks(gt) for gt in gts]
+    # get shape of horizontal/vertical binary shapes
+    bh_shape = binaries[0][0].shape
+    bv_shape = binaries[0][1].shape
+    
+    for t in xrange(T):
+        # to store the sum of vn as horizontal/vertical matrices
+        vn_h = np.zeros(bh_shape)
+        vn_v = np.zeros(bv_shape)
+        
+        for n in xrange(N):
+            yn = gts[n]
+            unary = unaries[n]
+            binary_h, binary_v = binaries[n]
+            gt_mask_h, gt_mask_v = gt_masks[n]
+            # integrate hamming loss to unary
+            unary[:,:,0] += np.where(yn, 0., 1./N)
+            unary[:,:,1] += np.where(yn, 1./N, 0.)
+            _, y_ = gridGraphCut(unary, binary_h, binary_v)
+            mask_h, mask_v = getMasks(y_)
+            vn_h += (gt_mask_h - mask_h) * binary_h
+            vn_v += (gt_mask_v - mask_v) * binary_v
+        
+        # reshape w as matrices for update
+        w_h = w * np.ones(bh_shape)
+        w_v = w * np.ones(bv_shape)
+        w_h -= (1./t) * (w_h + (C / N) * vn_h)
+        w_v -= (1./t) * (w_v + (C / N) * vn_v)
+        # get scalar w back as mean value
+        w = np.mean(np.concatenate(w_h.flatten(), w_v.flatten()))
 
 
 if __name__ == '__main__':

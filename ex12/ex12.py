@@ -3,6 +3,7 @@ import os
 import yaml
 from matplotlib import pyplot as plt
 from PIL import Image
+import maxflow
 
 NP_DTYPE_MAP = {'f': np.float32, 'd': np.float64}
 LAMBDA = 0.5
@@ -83,6 +84,19 @@ def gibbs_sampling(img, unary, nb_iteration, cut_ratio, w):
 
     predicted_labels = np.mean(samples, axis=0)
     return predicted_labels
+
+
+def gridGraphCut(unary, horizontal_binary, vertical_binary):
+    """graph cut for 2d grid with pott-model binary cost"""
+    nbrow, nbcol = unary.shape
+    g = maxflow.Graph[float]()
+    nodeids = g.add_grid_nodes((nbrow, nbcol))
+    #g.add_grid_edges(nodeids, binary)
+    g.add_grid_tedges(nodeids, unary[:,:,0], unary[:,:,1])
+    cutValue = g.maxflow()
+    isSource = g.get_grid_segments(nodeids)
+
+    return cutValue, isSource
 
 
 if __name__ == '__main__':

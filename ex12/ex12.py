@@ -9,6 +9,16 @@ NP_DTYPE_MAP = {'f': np.float32, 'd': np.float64}
 LAMBDA = 0.5
 
 
+def convertBadOpenCVYAMLString(string):
+    bad_head = "%YAML:1.0\nunary: !!opencv-matrix"
+    good_head = "%YAML 1.0\n---\nunary: !!map"
+    if string.startswith(bad_head):
+        string = good_head +string[len(bad_head):]
+    else:
+        print 'not changed.'
+    return string
+
+
 def cvDat2nparray(cvdict):
     return np.array(cvdict['data'],
                     dtype=NP_DTYPE_MAP[cvdict['dt']]).reshape(cvdict['rows'],
@@ -18,8 +28,7 @@ def cvDat2nparray(cvdict):
 def read_unary(yml_file):
     with open(yml_file) as filecontent:
         string = filecontent.read()
-        string = "%YAML 1.0" + os.linesep + "---" + string[len("%YAML:1.0"):] if string.startswith(
-            "%YAML:1.0") else string
+        string = convertBadOpenCVYAMLString(string)
         cvdict = yaml.load(string)['unary']
         print cvdict.keys()
         return cvDat2nparray(cvdict)

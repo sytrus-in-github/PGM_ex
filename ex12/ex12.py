@@ -121,16 +121,22 @@ def gridGraphCut(unary, horizontal_binary, vertical_binary):
     g = maxflow.Graph[float]()
     nodeids = g.add_grid_nodes((nbrow, nbcol))
     g.add_grid_tedges(nodeids, unary[:, :, 0], unary[:, :, 1])
-    # add horizontal binary weights
-    for r in xrange(nbrow):
-        for c in xrange(nbcol-1):
-            energy = horizontal_binary[r,c]
-            g.add_edge(nodeids[r,c], nodeids[r, c+1], energy, energy)
-    # add vertical binary weights  
-    for r in xrange(nbrow-1):
-        for c in xrange(nbcol):
-            energy = vertical_binary[r,c]
-            g.add_edge(nodeids[r,c], nodeids[r+1, c], energy, energy)
+#    # add horizontal binary weights
+#    for r in xrange(nbrow):
+#        for c in xrange(nbcol-1):
+#            energy = horizontal_binary[r,c]
+#            g.add_edge(nodeids[r,c], nodeids[r, c+1], energy, energy)
+#    # add vertical binary weights  
+#    for r in xrange(nbrow-1):
+#        for c in xrange(nbcol):
+#            energy = vertical_binary[r,c]
+#            g.add_edge(nodeids[r,c], nodeids[r+1, c], energy, energy)
+    structure = np.zeros((3, 3))
+    structure[1,2] = 1
+    g.add_grid_edges(nodeids[:, :-1], structure=structure, weights=horizontal_binary, symmetric=True)
+    structure = np.zeros((3, 3))
+    structure[2,1] = 1
+    g.add_grid_edges(nodeids[:-1, :], structure=structure, weights=vertical_binary, symmetric=True)
     cutValue = g.maxflow()
     isSource = g.get_grid_segments(nodeids)
 
@@ -187,6 +193,7 @@ def lossMinimizingParameterLearning(imgs, gts, unaries, T, C):
         print np.mean(vn_h), np.mean(vn_v)
         w_h -= (1./t) * (w_h + (C / N) * vn_h)
         w_v -= (1./t) * (w_v + (C / N) * vn_v)
+        print np.mean(w_h), np.mean(w_v), np.mean(np.concatenate([w_h.flatten(), w_v.flatten()]))
         # get scalar w back as mean value
         w = np.mean(np.concatenate([w_h.flatten(), w_v.flatten()]))
         print 'iteration', t, 'w', w
@@ -201,7 +208,7 @@ def test_lossMinimizingParameterLearning():
     filenames = [fn[:-4] for fn in os.listdir(train_directory) if fn.endswith('.bmp')]
     
     T = 3
-    C = 1
+    C = 100
     print 'loading images ...'
     imgs = [np.asarray(
                 Image.open(

@@ -176,14 +176,15 @@ def lossMinimizingParameterLearning(imgs, gts, unaries, T, C):
             # integrate hamming loss to unary
             unary[:,:,0] += np.where(yn, 0., 1./N)
             unary[:,:,1] += np.where(yn, 1./N, 0.)
-            _, y_ = gridGraphCut(unary, binary_h, binary_v)
+            _, y_ = gridGraphCut(unary, w * binary_h, w * binary_v)
             mask_h, mask_v = getMasks(y_)
-            vn_h += gt_mask_h * binary_h - mask_h * binary_h
-            vn_v += gt_mask_v * binary_v - mask_v * binary_v
+            vn_h += (gt_mask_h * binary_h - mask_h * binary_h)
+            vn_v += (gt_mask_v * binary_v - mask_v * binary_v)
         
         # reshape w as matrices for update
         w_h = w * np.ones(bh_shape)
         w_v = w * np.ones(bv_shape)
+        print np.mean(vn_h), np.mean(vn_v)
         w_h -= (1./t) * (w_h + (C / N) * vn_h)
         w_v -= (1./t) * (w_v + (C / N) * vn_v)
         # get scalar w back as mean value

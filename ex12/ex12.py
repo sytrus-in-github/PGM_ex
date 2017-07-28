@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import warnings
 import yaml
 from matplotlib import pyplot as plt
 from PIL import Image
@@ -178,6 +179,41 @@ def lossMinimizingParameterLearning(imgs, gts, unaries, T, C):
         w_v -= (1./t) * (w_v + (C / N) * vn_v)
         # get scalar w back as mean value
         w = np.mean(np.concatenate(w_h.flatten(), w_v.flatten()))
+        print 'iteration', t, 'w', w
+    return w
+
+
+def test_lossMinimizingParameterLearning():
+    print 'indexing images ...'
+    train_directory = 'data/cows-training'
+    unary_directory = 'data/cows-unary'
+    truth_directory = 'data/cows-groundtruth'
+    filenames = [fn[:-4] for fn in os.listdir(train_directory) if fn.endswith('.bmp')]
+    
+    T = 3
+    C = 1
+    print 'loading images ...'
+    imgs = [np.asarray(
+                Image.open(
+                    os.path.join(train_directory, f, '.bmp')
+                    ).convert('RGB'), 
+                dtype=np.float64
+                ) / 255. for f in filenames]
+    print 'loading ground-truth segmentations ...'
+    gts = [np.asarray(
+                Image.open(
+                    os.path.join(truth_directory, f, '.bmp')
+                    ), 
+                dtype=np.uint8
+                ) > 127 for f in filenames]
+    print 'loading unary energies ...'
+    warnings.simplefilter("ignore")
+    unaries = [-np.log(read_unary(os.path.join(unary_directory, f, '.yml')))
+                   for f in filenames]
+    warnings.resetwarnings()
+    
+    print 'learning w ...'
+    lossMinimizingParameterLearning(imgs, gts, unaries, T, C)
 
 
 if __name__ == '__main__':

@@ -162,7 +162,7 @@ def lossMinimizingParameterLearning(imgs, gts, unaries, T, C):
     bh_shape = binaries[0][0].shape
     bv_shape = binaries[0][1].shape
     
-    for t in xrange(T):
+    for t in xrange(1, T+1):
         # to store the sum of vn as horizontal/vertical matrices
         vn_h = np.zeros(bh_shape)
         vn_v = np.zeros(bv_shape)
@@ -170,6 +170,7 @@ def lossMinimizingParameterLearning(imgs, gts, unaries, T, C):
         for n in xrange(N):
             yn = gts[n]
             unary = unaries[n]
+            unary = np.stack([1 - unary, unary], -1)
             binary_h, binary_v = binaries[n]
             gt_mask_h, gt_mask_v = gt_masks[n]
             # integrate hamming loss to unary
@@ -177,8 +178,8 @@ def lossMinimizingParameterLearning(imgs, gts, unaries, T, C):
             unary[:,:,1] += np.where(yn, 1./N, 0.)
             _, y_ = gridGraphCut(unary, binary_h, binary_v)
             mask_h, mask_v = getMasks(y_)
-            vn_h += (gt_mask_h - mask_h) * binary_h
-            vn_v += (gt_mask_v - mask_v) * binary_v
+            vn_h += gt_mask_h * binary_h - mask_h * binary_h
+            vn_v += gt_mask_v * binary_v - mask_v * binary_v
         
         # reshape w as matrices for update
         w_h = w * np.ones(bh_shape)
@@ -186,7 +187,7 @@ def lossMinimizingParameterLearning(imgs, gts, unaries, T, C):
         w_h -= (1./t) * (w_h + (C / N) * vn_h)
         w_v -= (1./t) * (w_v + (C / N) * vn_v)
         # get scalar w back as mean value
-        w = np.mean(np.concatenate(w_h.flatten(), w_v.flatten()))
+        w = np.mean(np.concatenate([w_h.flatten(), w_v.flatten()]))
         print 'iteration', t, 'w', w
     return w
 

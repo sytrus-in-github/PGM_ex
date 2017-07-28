@@ -26,13 +26,21 @@ def cvDat2nparray(cvdict):
                                                               cvdict['cols'])
 
 
-def read_unary(yml_file):
+def read_unary(yml_file=None, npy_file=None):
+    if npy_file is not None:
+        if os.path.isfile(npy_file):
+            print 'Loading', npy_file
+            return np.load(npy_file)
     with open(yml_file) as filecontent:
         string = filecontent.read()
         string = convertBadOpenCVYAMLString(string)
         cvdict = yaml.load(string)['unary']
-        print cvdict.keys()
-        return cvDat2nparray(cvdict)
+        dat = cvDat2nparray(cvdict)
+    if npy_file is not None:
+        print 'Saving', npy_file
+        np.save(npy_file, dat)
+    return dat
+        
 
 
 def squared_norm(p1, p2):
@@ -195,20 +203,20 @@ def test_lossMinimizingParameterLearning():
     print 'loading images ...'
     imgs = [np.asarray(
                 Image.open(
-                    os.path.join(train_directory, f, '.bmp')
+                    os.path.join(train_directory, f+'.bmp')
                     ).convert('RGB'), 
                 dtype=np.float64
                 ) / 255. for f in filenames]
     print 'loading ground-truth segmentations ...'
     gts = [np.asarray(
                 Image.open(
-                    os.path.join(truth_directory, f, '.bmp')
+                    os.path.join(truth_directory, f+'.bmp')
                     ), 
                 dtype=np.uint8
                 ) > 127 for f in filenames]
     print 'loading unary energies ...'
     warnings.simplefilter("ignore")
-    unaries = [-np.log(read_unary(os.path.join(unary_directory, f, '.yml')))
+    unaries = [-np.log(read_unary(os.path.join(unary_directory, f+'.yml'), os.path.join(unary_directory, f+'.npy')))
                    for f in filenames]
     warnings.resetwarnings()
     
@@ -217,6 +225,8 @@ def test_lossMinimizingParameterLearning():
 
 
 if __name__ == '__main__':
+    test_lossMinimizingParameterLearning()
+    raise Exception('stop.')
     train_directory = 'data/cows-training'
     unary_directory = 'data/cows-unary'
 

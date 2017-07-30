@@ -40,7 +40,6 @@ def read_unary(yml_file=None, npy_file=None):
         print 'Saving', npy_file
         np.save(npy_file, dat)
     return dat
-        
 
 
 def squared_norm(p1, p2):
@@ -112,7 +111,7 @@ def gibbs_sampling(img, unary, nb_iteration, cut_ratio, w):
             samples[i - cut_value, :, :] = current_y
 
     predicted_labels = np.mean(samples, axis=0)
-    return predicted_labels
+    return predicted_labels, samples
 
 
 def gridGraphCut(unary, horizontal_binary, vertical_binary):
@@ -121,21 +120,21 @@ def gridGraphCut(unary, horizontal_binary, vertical_binary):
     g = maxflow.Graph[float]()
     nodeids = g.add_grid_nodes((nbrow, nbcol))
     g.add_grid_tedges(nodeids, unary[:, :, 0], unary[:, :, 1])
-#    # add horizontal binary weights
-#    for r in xrange(nbrow):
-#        for c in xrange(nbcol-1):
-#            energy = horizontal_binary[r,c]
-#            g.add_edge(nodeids[r,c], nodeids[r, c+1], energy, energy)
-#    # add vertical binary weights  
-#    for r in xrange(nbrow-1):
-#        for c in xrange(nbcol):
-#            energy = vertical_binary[r,c]
-#            g.add_edge(nodeids[r,c], nodeids[r+1, c], energy, energy)
+    #    # add horizontal binary weights
+    #    for r in xrange(nbrow):
+    #        for c in xrange(nbcol-1):
+    #            energy = horizontal_binary[r,c]
+    #            g.add_edge(nodeids[r,c], nodeids[r, c+1], energy, energy)
+    #    # add vertical binary weights
+    #    for r in xrange(nbrow-1):
+    #        for c in xrange(nbcol):
+    #            energy = vertical_binary[r,c]
+    #            g.add_edge(nodeids[r,c], nodeids[r+1, c], energy, energy)
     structure = np.zeros((3, 3))
-    structure[1,2] = 1
+    structure[1, 2] = 1
     g.add_grid_edges(nodeids[:, :-1], structure=structure, weights=horizontal_binary, symmetric=True)
     structure = np.zeros((3, 3))
-    structure[2,1] = 1
+    structure[2, 1] = 1
     g.add_grid_edges(nodeids[:-1, :], structure=structure, weights=vertical_binary, symmetric=True)
     cutValue = g.maxflow()
     isSource = g.get_grid_segments(nodeids)
@@ -144,9 +143,8 @@ def gridGraphCut(unary, horizontal_binary, vertical_binary):
 
 
 def getMasks(labeling):
-    nbrow, nbcol = labeling.shape
-    horizontal_mask = labeling[:, :-1] == labeling[:, 1:]
-    vertical_mask = labeling[:-1, :] == labeling[1:, :]
+    horizontal_mask = labeling[:, :-1] != labeling[:, 1:]
+    vertical_mask = labeling[:-1, :] != labeling[1:, :]
     return horizontal_mask, vertical_mask
 
 
@@ -161,18 +159,18 @@ def lossMinimizingParameterLearning(imgs, gts, unaries, T, C):
     C = float(C)
     w = 0.
     binaries = [compute_energy(img) for img in imgs]
-    imgs = None # release useless data from memory
+    imgs = None  # release useless data from memory
     # get ground-truth horizontal/vertical masks for binary energy
     gt_masks = [getMasks(gt) for gt in gts]
     # get shape of horizontal/vertical binary shapes
     bh_shape = binaries[0][0].shape
     bv_shape = binaries[0][1].shape
-    
-    for t in xrange(1, T+1):
+
+    for t in xrange(1, T + 1):
         # to store the sum of vn as horizontal/vertical matrices
         vn_h = np.zeros(bh_shape)
         vn_v = np.zeros(bv_shape)
-        
+
         for n in xrange(N):
             yn = gts[n]
             unary = unaries[n]
@@ -180,19 +178,19 @@ def lossMinimizingParameterLearning(imgs, gts, unaries, T, C):
             binary_h, binary_v = binaries[n]
             gt_mask_h, gt_mask_v = gt_masks[n]
             # integrate hamming loss to unary
-            unary[:,:,0] += np.where(yn, 0., 1./N)
-            unary[:,:,1] += np.where(yn, 1./N, 0.)
+            unary[:, :, 0] += np.where(yn, 0., 1. / N)
+            unary[:, :, 1] += np.where(yn, 1. / N, 0.)
             _, y_ = gridGraphCut(unary, w * binary_h, w * binary_v)
             mask_h, mask_v = getMasks(y_)
             vn_h += (gt_mask_h * binary_h - mask_h * binary_h)
             vn_v += (gt_mask_v * binary_v - mask_v * binary_v)
-        
+
         # reshape w as matrices for update
         w_h = w * np.ones(bh_shape)
         w_v = w * np.ones(bv_shape)
         print np.mean(vn_h), np.mean(vn_v)
-        w_h -= (1./t) * (w_h + (C / N) * vn_h)
-        w_v -= (1./t) * (w_v + (C / N) * vn_v)
+        w_h -= (1. / t) * (w_h + (C / N) * vn_h)
+        w_v -= (1. / t) * (w_v + (C / N) * vn_v)
         print np.mean(w_h), np.mean(w_v), np.mean(np.concatenate([w_h.flatten(), w_v.flatten()]))
         # get scalar w back as mean value
         w = np.mean(np.concatenate([w_h.flatten(), w_v.flatten()]))
@@ -200,41 +198,106 @@ def lossMinimizingParameterLearning(imgs, gts, unaries, T, C):
     return w
 
 
+def probabilisticParameterLearning(imgs, gts, unaries, T):
+    N = len(imgs)
+    w = 0.
+    lambda_param = 0.01
+
+    binaries = [compute_energy(img) for img in imgs]
+    gt_masks = [getMasks(gt) for gt in gts]
+
+    bh_shape = binaries[0][0].shape
+    bv_shape = binaries[0][1].shape
+
+    for t in xrange(1, T + 1):
+        diff_h = np.zeros(bh_shape)
+        diff_v = np.zeros(bv_shape)
+
+        for n in xrange(N):
+            unary = unaries[n]
+            img = imgs[n]
+
+            binary_h, binary_v = binaries[n]
+            gt_mask_h, gt_mask_v = gt_masks[n]
+
+            _, samples = gibbs_sampling(img, unary, 500, 0.8, w)
+
+            masks_for_samples = map(list, zip(*[getMasks(sample) for sample in samples]))
+
+            masks_h = np.asarray(masks_for_samples[0])
+            masks_v = np.asarray(masks_for_samples[1])
+
+            expected_energies_h = np.mean(np.expand_dims(binary_h, 0) * masks_h, axis=0)
+            expected_energies_v = np.mean(np.expand_dims(binary_v, 0) * masks_v, axis=0)
+
+            diff_h += gt_mask_h * binary_h - expected_energies_h
+            diff_v += gt_mask_v * binary_v - expected_energies_v
+
+        w_h = w * np.ones(bh_shape)
+        w_v = w * np.ones(bv_shape)
+
+        w_h -= (1. / t) * (2 * w_h * lambda_param + diff_h)
+        w_v -= (1. / t) * (2 * w_v * lambda_param + diff_v)
+
+        w = np.mean(np.concatenate([w_h.flatten(), w_v.flatten()]))
+        print 'iteration', t, 'w', w
+
+    return w
+
+
+def test_probabilisticParameterLearning():
+    gts, imgs, unaries = setup_data_for_training()
+    T = 10
+
+    print 'learning w ...'
+    probabilisticParameterLearning(imgs, gts, unaries, T)
+
+
 def test_lossMinimizingParameterLearning():
+    gts, imgs, unaries = setup_data_for_training()
+    T = 10
+    C = 100
+
+    print 'learning w ...'
+    lossMinimizingParameterLearning(imgs, gts, unaries, T, C)
+
+
+def setup_data_for_training():
     print 'indexing images ...'
     train_directory = 'data/cows-training'
     unary_directory = 'data/cows-unary'
     truth_directory = 'data/cows-groundtruth'
     filenames = [fn[:-4] for fn in os.listdir(train_directory) if fn.endswith('.bmp')]
-    
-    T = 3
-    C = 100
+
     print 'loading images ...'
     imgs = [np.asarray(
-                Image.open(
-                    os.path.join(train_directory, f+'.bmp')
-                    ).convert('RGB'), 
-                dtype=np.float64
-                ) / 255. for f in filenames]
+        Image.open(
+            os.path.join(train_directory, f + '.bmp')
+        ).convert('RGB'),
+        dtype=np.float64
+    ) / 255. for f in filenames]
     print 'loading ground-truth segmentations ...'
+
     gts = [np.asarray(
-                Image.open(
-                    os.path.join(truth_directory, f+'.bmp')
-                    ), 
-                dtype=np.uint8
-                ) > 127 for f in filenames]
+        Image.open(
+            os.path.join(truth_directory, f + '.bmp')
+        ),
+        dtype=np.uint8
+    ) > 127 for f in filenames]
     print 'loading unary energies ...'
+
     warnings.simplefilter("ignore")
-    unaries = [-np.log(read_unary(os.path.join(unary_directory, f+'.yml'), os.path.join(unary_directory, f+'.npy')))
-                   for f in filenames]
+
+    unaries = [-np.log(read_unary(os.path.join(unary_directory, f + '.yml'), os.path.join(unary_directory, f + '.npy')))
+               for f in filenames]
     warnings.resetwarnings()
-    
-    print 'learning w ...'
-    lossMinimizingParameterLearning(imgs, gts, unaries, T, C)
+
+    return gts, imgs, unaries
 
 
 if __name__ == '__main__':
     test_lossMinimizingParameterLearning()
+    test_probabilisticParameterLearning()
     raise Exception('stop.')
     train_directory = 'data/cows-training'
     unary_directory = 'data/cows-unary'

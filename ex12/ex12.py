@@ -173,13 +173,14 @@ def lossMinimizingParameterLearning(imgs, gts, unaries, T, C):
 
         for n in xrange(N):
             yn = gts[n]
-            unary = unaries[n]
+            nb_pixel = len(yn.flatten())
+            unary = unaries[n].copy()
             unary = np.stack([1 - unary, unary], -1)
             binary_h, binary_v = binaries[n]
             gt_mask_h, gt_mask_v = gt_masks[n]
             # integrate hamming loss to unary
-            unary[:, :, 0] += np.where(yn, 0., 1. / N)
-            unary[:, :, 1] += np.where(yn, 1. / N, 0.)
+            unary[:, :, 0] += np.where(yn, 0., 1. / nb_pixel)
+            unary[:, :, 1] += np.where(yn, 1. / nb_pixel, 0.)
             _, y_ = gridGraphCut(unary, w * binary_h, w * binary_v)
             mask_h, mask_v = getMasks(y_)
             vn_h += (gt_mask_h * binary_h - mask_h * binary_h)
@@ -297,7 +298,7 @@ def setup_data_for_training():
 
 if __name__ == '__main__':
     test_lossMinimizingParameterLearning()
-    test_probabilisticParameterLearning()
+    #test_probabilisticParameterLearning()
     raise Exception('stop.')
     train_directory = 'data/cows-training'
     unary_directory = 'data/cows-unary'
